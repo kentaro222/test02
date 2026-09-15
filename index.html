@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC試作 v53</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v54</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -14,12 +14,14 @@
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"BIZ UDGothic","BIZ UDゴシック","MS Gothic",monospace;overflow:hidden}
 button,input,select{font:inherit}
 .topbar{height:54px;display:flex;align-items:center;gap:4px;padding:6px 8px;background:#191d1f;border-bottom:1px solid #667174;overflow:hidden}
+.tab-strip{display:flex;align-items:center;gap:4px;min-width:0}
+.top-utility-strip{display:flex;align-items:center;gap:4px;min-width:0;margin-left:auto}
 .tab-btn{height:34px;min-width:0;flex:0 1 112px;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;font-size:11px;padding:0 8px;white-space:nowrap;cursor:pointer}
 .tab-btn.active{background:#0898df;box-shadow:inset 0 -3px 0 #9ef0ff}
-.top-file-actions{display:flex;gap:6px;margin-left:auto}
+.top-file-actions{display:flex;gap:6px;margin-left:0}
 .file-btn{height:30px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 7px;font-size:11px;white-space:nowrap;cursor:pointer}
 .file-btn:hover{background:#4a565b}
-.history-actions{display:flex;gap:4px;margin-left:auto}
+.history-actions{display:flex;gap:4px;margin-left:0}
 .history-actions button{height:30px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:3px;padding:0 6px;font-family:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
 .history-actions button:disabled{opacity:.35;cursor:default}
 .history-actions button:not(:disabled):hover{background:#465157}
@@ -140,6 +142,74 @@ button,input,select{font:inherit}
 @media(max-width:1200px){.settings-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:1500px){.app-title{display:none}.tab-btn{flex-basis:100px;padding:0 6px}.file-btn{padding:0 6px}.history-actions button{padding:0 5px}}
 @media(max-width:1250px){.save-state{display:none}.tab-btn{flex-basis:92px;font-size:10px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
+@media (orientation:portrait) and (max-width:1024px){
+  html,body{overscroll-behavior:none}
+  .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+  .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
+  .tab-btn{width:100%;height:36px;min-width:0;max-width:none;flex:none;padding:0 3px;font-size:10px}
+  .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .top-utility-strip>*{flex:0 0 auto}
+  .history-actions,.top-file-actions{margin-left:0;gap:4px}
+  .history-actions button,.file-btn{height:36px;font-size:10px;padding:0 7px}
+  .save-state,.app-title{display:none}
+  .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+
+  .main-monitor{padding:4px;gap:4px;grid-template-rows:minmax(260px,62%) minmax(0,38%)}
+  .main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px}
+  .stage-toolbar{padding:4px 6px;gap:5px}
+  .stage-title{font-size:11px}
+  .stage-panel-toggle{font-size:10px;padding:0 5px;margin-left:2px}
+  .toolbar-q{font-size:11px}
+  #nowQName{font-size:10px;max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .monitor-validation{font-size:10px;margin-left:3px;max-width:30%}
+  .monitor-cue-head{gap:4px;padding:5px 5px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  .monitor-cue-head button{padding:4px 7px;font-size:11px}
+  .position-mode{margin-left:2px}
+  .cue-seek{min-width:150px;max-width:300px}
+  .monitor-cue-browser{padding:3px}
+
+  .cue-layout{grid-template-columns:1fr;grid-template-rows:188px minmax(0,1fr)}
+  .cue-left{border-right:0;border-bottom:1px solid #778083;padding:5px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:34px minmax(82px,1fr) 38px;gap:4px;overflow:hidden}
+  .cue-head{grid-column:1/-1;height:34px;margin:0;font-size:20px}
+  .cue-list{grid-column:1/-1;height:auto;min-height:0}
+  .cue-list-item{padding:5px 7px;font-size:11px}
+  .cue-left button{width:100%;height:38px;margin:0;padding:4px 3px;font-size:10px;white-space:nowrap}
+  .cue-main{padding:6px}
+  .q-header{grid-template-columns:82px minmax(0,1fr);gap:5px}
+  .q-actions{grid-column:1/-1}
+  .q-actions button{min-height:34px}
+  .editor-toolbar{gap:4px}
+  .editor-toolbar button{min-height:34px;padding:5px 7px;font-size:11px}
+  .renumber-box{grid-template-columns:repeat(2,minmax(120px,1fr));gap:6px}
+  .run-table{font-size:11px}
+
+  .settings-shell{grid-template-columns:1fr;grid-template-rows:76px minmax(0,1fr)}
+  .device-list{border-right:0;border-bottom:1px solid #6c777b;padding:5px;overflow:hidden}
+  .device-list h3{display:none}
+  #deviceList{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;height:64px;align-items:stretch}
+  .device-btn{flex:0 0 92px;height:58px;margin:0;padding:5px 6px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;font-size:12px;overflow:hidden}
+  .device-btn small{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+  .settings-detail{padding:8px}
+  .settings-detail h2{font-size:18px}
+  .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .field{padding:6px}
+  .hanging-tools{gap:4px;margin-bottom:8px}
+  .hanging-tools button{height:36px;padding:0 8px;font-size:11px}
+  .label-table{min-width:520px}
+  .settings-detail{overflow:auto}
+
+  .initial-page{padding:8px}
+  .initial-header{display:block;margin-bottom:8px}
+  .initial-actions{margin-top:7px;gap:5px}
+  .initial-actions button{min-height:36px}
+  .initial-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  .initial-full-table{min-width:760px}
+
+  .shaku-shell{padding:10px}
+  .shaku-panel{max-width:none;padding:14px}
+  .simple-calc{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .simple-calc-row{min-width:560px}
+}
 
 .main-monitor{height:100%;display:grid;grid-template-rows:65% 35%;gap:6px;padding:6px}
 .main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px;gap:6px}
@@ -224,26 +294,30 @@ button,input,select{font:inherit}
 </head>
 <body>
 <div class="topbar">
-  <button class="tab-btn active" data-tab="monitor">断面モニタ</button>
-  <button class="tab-btn" data-tab="cue">Cue</button>
-  <button class="tab-btn" data-tab="settings">装置設定</button>
-  <button class="tab-btn" data-tab="initial">初期位置</button>
-  <button class="tab-btn" data-tab="shakuCalc">尺計算</button>
-  <div class="history-actions">
-    <button id="undoBtn" title="戻す (Ctrl+Z)" disabled>↶ 戻す</button>
-    <button id="redoBtn" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ やり直す</button>
+  <div class="tab-strip">
+    <button class="tab-btn active" data-tab="monitor">断面モニタ</button>
+    <button class="tab-btn" data-tab="cue">Cue</button>
+    <button class="tab-btn" data-tab="settings">装置設定</button>
+    <button class="tab-btn" data-tab="initial">初期位置</button>
+    <button class="tab-btn" data-tab="shakuCalc">尺計算</button>
   </div>
-  <div class="top-file-actions">
-    <button id="csvInitBtn" class="file-btn">装置CSV読込</button>
-    <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
-    <button id="exportDeviceCsvBtn" class="file-btn">装置CSV書出</button>
-    <button id="exportCueCsvBtn" class="file-btn">キューCSV書出</button>
-    <button id="exportJsonBtn" class="file-btn">JSON保存</button>
-    <button id="importJsonBtn" class="file-btn">JSON読込</button>
-    <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
-    <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
+  <div class="top-utility-strip">
+    <div class="history-actions">
+      <button id="undoBtn" title="戻す (Ctrl+Z)" disabled>↶ 戻す</button>
+      <button id="redoBtn" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ やり直す</button>
+    </div>
+    <div class="top-file-actions">
+      <button id="csvInitBtn" class="file-btn">装置CSV読込</button>
+      <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
+      <button id="exportDeviceCsvBtn" class="file-btn">装置CSV書出</button>
+      <button id="exportCueCsvBtn" class="file-btn">キューCSV書出</button>
+      <button id="exportJsonBtn" class="file-btn">JSON保存</button>
+      <button id="importJsonBtn" class="file-btn">JSON読込</button>
+      <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
+      <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
+    </div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v54</div>
   </div>
-  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v53</div>
 </div>
 
 <section id="monitor" class="tab active">
