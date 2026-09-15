@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v55</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v56</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -302,6 +302,56 @@ button,input,select{font:inherit}
 .simple-calc-row input,.simple-calc-row select{width:100%;box-sizing:border-box;background:#fff;color:#111;border:1px solid #697479;padding:9px;font-family:inherit;font-size:20px}
 .simple-calc-eq{text-align:center;font-size:22px;font-weight:800}
 .simple-calc-result{margin-top:10px;font-size:13px;color:#596368}
+
+
+/* v56: Android / tablet scroll containment fixes */
+.main-monitor{grid-template-columns:minmax(0,1fr);min-width:0;max-width:100%;width:100%;overflow:hidden}
+.monitor-top,.monitor-bottom,.stage-card,.stage-toolbar,.stage-viewport,.monitor-cue-head,.monitor-cue-browser{min-width:0;max-width:100%}
+.monitor-top,.monitor-bottom,.stage-card{width:100%}
+.monitor-bottom{overflow:hidden}
+.monitor-cue-browser{min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.stage-viewport{width:100%;touch-action:pan-x pan-y}
+
+.cue-layout,.cue-left,.cue-main{min-width:0;max-width:100%}
+.cue-layout{width:100%;overflow:hidden}
+.cue-main{min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.cue-list{min-width:0;min-height:0;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.settings-shell,.settings-detail,.initial-page,.initial-table-wrap{min-width:0;max-width:100%}
+
+@media (orientation:portrait) and (max-width:1024px){
+  /* Keep every page itself inside the viewport; only its intended panes may scroll. */
+  .tab{width:100%;max-width:100vw;min-width:0;overflow:hidden}
+  .main-monitor{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(260px,62%) minmax(0,38%);padding:4px;gap:4px}
+  .main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px}
+  .monitor-top,.monitor-bottom{min-width:0;width:100%;max-width:100%;overflow:hidden}
+  .stage-card{min-width:0;width:100%;max-width:100%;overflow:hidden}
+  .stage-toolbar{min-width:0;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  .stage-toolbar>*{flex:0 0 auto}
+  #nowQName{flex:0 1 170px;min-width:70px;max-width:170px}
+  .monitor-validation{flex:0 1 220px;min-width:80px;max-width:220px}
+  .stage-viewport{left:0;right:0;width:auto;max-width:none;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+
+  .monitor-cue-head{flex:0 0 44px;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  .monitor-cue-head>*{flex:0 0 auto}
+  .cue-seek{flex:0 0 260px;min-width:260px;max-width:260px}
+  .monitor-cue-browser{flex:1 1 auto;min-height:0;min-width:0;width:100%;max-width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .mon-q.selected{min-width:1060px}
+  .mon-q.selected .mon-q-header{position:static}
+  .mon-run-grid{width:max-content;min-width:1060px}
+
+  .cue-layout{width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-rows:188px minmax(0,1fr);overflow:hidden}
+  .cue-left{min-width:0;max-width:100%;min-height:0;overflow:hidden}
+  .cue-list{min-width:0;max-width:100%;min-height:0;overflow-y:scroll;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .cue-main{min-width:0;max-width:100%;min-height:0;width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .q-block{min-width:0;max-width:none}
+  .run-table{width:1290px;min-width:1290px;max-width:none}
+
+  .settings-shell{min-width:0;max-width:100%;width:100%;overflow:hidden}
+  .settings-detail{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .initial-page{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+  .initial-table-wrap{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+}
+
 </style>
 </head>
 <body>
@@ -328,7 +378,7 @@ button,input,select{font:inherit}
       <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
       <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v55</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v56</div>
   </div>
 </div>
 
