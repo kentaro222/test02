@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v54</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v55</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -35,7 +35,8 @@ button,input,select{font:inherit}
 .stage-card,.side-card,.settings-shell,.cue-main{background:#f8f8f6;border:1px solid #778083;color:#111;position:relative}
 .stage-toolbar{height:34px;background:#23282a;color:#fff;display:flex;align-items:center;gap:10px;padding:4px 10px}
 .stage-title{font-weight:700}
-.stage-canvas{position:absolute;left:0;right:0;top:34px;bottom:0;overflow:hidden;background:#f8f8f6}
+.stage-viewport{position:absolute;left:0;right:0;top:34px;bottom:0;overflow:auto;background:#f8f8f6;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.stage-canvas{position:relative;width:100%;height:100%;min-width:100%;min-height:100%;overflow:hidden;background:#f8f8f6}
 .ref-line{position:absolute;left:3%;right:3%;border-top:2px solid #111}
 .ref-line.fly{border-top:2px dotted red}
 .ref-line.prosc{border-top:3px solid #111}
@@ -159,6 +160,9 @@ button,input,select{font:inherit}
   .stage-toolbar{padding:4px 6px;gap:5px}
   .stage-title{font-size:11px}
   .stage-panel-toggle{font-size:10px;padding:0 5px;margin-left:2px}
+  .stage-scale-toggle{font-size:10px;padding:0 5px}
+  .stage-scale-label{font-size:9px}
+  .stage-viewport{scrollbar-width:thin}
   .toolbar-q{font-size:11px}
   #nowQName{font-size:10px;max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .monitor-validation{font-size:10px;margin-left:3px;max-width:30%}
@@ -174,14 +178,19 @@ button,input,select{font:inherit}
   .cue-list{grid-column:1/-1;height:auto;min-height:0}
   .cue-list-item{padding:5px 7px;font-size:11px}
   .cue-left button{width:100%;height:38px;margin:0;padding:4px 3px;font-size:10px;white-space:nowrap}
-  .cue-main{padding:6px}
+  .cue-main{padding:6px;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
   .q-header{grid-template-columns:82px minmax(0,1fr);gap:5px}
   .q-actions{grid-column:1/-1}
   .q-actions button{min-height:34px}
   .editor-toolbar{gap:4px}
   .editor-toolbar button{min-height:34px;padding:5px 7px;font-size:11px}
   .renumber-box{grid-template-columns:repeat(2,minmax(120px,1fr));gap:6px}
-  .run-table{font-size:11px}
+  .run-table{font-size:11px;min-width:1290px}
+  .run-table thead th{position:sticky;top:0;z-index:4}
+  .run-table th:first-child,.run-table td:first-child{position:sticky;left:0;z-index:3}
+  .run-table th:nth-child(2),.run-table td:nth-child(2){position:sticky;left:34px;z-index:3;box-shadow:2px 0 3px rgba(0,0,0,.28)}
+  .run-table thead th:first-child,.run-table thead th:nth-child(2){z-index:6}
+  .cue-list,.monitor-cue-browser{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 
   .settings-shell{grid-template-columns:1fr;grid-template-rows:76px minmax(0,1fr)}
   .device-list{border-right:0;border-bottom:1px solid #6c777b;padding:5px;overflow:hidden}
@@ -218,6 +227,9 @@ button,input,select{font:inherit}
 .monitor-top,.monitor-bottom{min-height:0}
 .stage-panel-toggle{height:26px;margin-left:6px;padding:0 8px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap}
 .stage-panel-toggle:hover{background:#4a565b}
+.stage-scale-toggle{height:26px;padding:0 7px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap}
+.stage-scale-toggle.active{background:#0079b7;border-color:#20b7ff;font-weight:800}
+.stage-scale-label{font-size:10px;color:#c4ced1;margin-left:2px;white-space:nowrap}
 .monitor-top .stage-card{height:100%}
 .toolbar-q{font-weight:800;color:#eff300;margin-left:auto}
 .monitor-validation{margin-left:10px;color:#ff7575;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
@@ -316,7 +328,7 @@ button,input,select{font:inherit}
       <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
       <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v54</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v55</div>
   </div>
 </div>
 
@@ -327,10 +339,11 @@ button,input,select{font:inherit}
         <div class="stage-toolbar compact">
           <span class="stage-title">断面モニタ</span>
           <button id="toggleMonitorCuePanel" class="stage-panel-toggle" type="button" aria-expanded="true">Cue一覧を畳む ▲</button>
+          <span class="stage-scale-label">縮尺</span><button id="stageScaleToggle" class="stage-scale-toggle" type="button" aria-pressed="false" title="全体表示 / 縦横等縮尺を切替">全体</button>
           <span class="toolbar-q" id="nowQNum">001.00</span>
           <span id="nowQName"></span><span id="monitorValidation" class="monitor-validation"></span>
         </div>
-        <div class="stage-canvas" id="stageCanvas"></div>
+        <div class="stage-viewport" id="stageViewport"><div class="stage-canvas" id="stageCanvas"></div></div>
       </div>
     </div>
     <div class="monitor-bottom">
@@ -473,6 +486,7 @@ let cues=[
 let livePositions={};
 let selectedListIndex=0;
 let positionDisplayMode='label';
+let stageScaleMode='fit';
 let cueClipboard=null;
 let hangingItemClipboard=null;
 let runClipboard=[];
@@ -1584,9 +1598,25 @@ function stageLayout(width){
  devices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
  return {xMap,pxPerMM,totalMM:total};
 }
+function sizeStageCanvas(){
+ const vp=document.getElementById('stageViewport'),c=document.getElementById('stageCanvas');
+ if(!vp||!c)return;
+ if(stageScaleMode==='equal'){
+   const targetW=Math.max(vp.clientWidth,Math.max(1180,devices.length*40+160));
+   const xScale=stageLayout(targetW).pxPerMM;
+   const targetH=Math.max(vp.clientHeight,Math.ceil(48+18+21550*xScale));
+   c.style.width=targetW+'px';
+   c.style.height=targetH+'px';
+ }else{
+   c.style.width='100%';
+   c.style.height='100%';
+ }
+}
 function mmToY(mm,h){const top=48,bottom=18,max=21550;return top+(max-mm)/max*(h-top-bottom)}
 function renderStage(t=0){
- const c=document.getElementById('stageCanvas'),w=c.clientWidth,h=c.clientHeight;
+ const c=document.getElementById('stageCanvas');
+ sizeStageCanvas();
+ const w=c.clientWidth,h=c.clientHeight;
  if(!w||!h)return;
  const p=positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
  const stageStartState=positionStateBeforeCue(selectedCue);
@@ -1743,6 +1773,27 @@ function setMonitorCueCollapsed(collapsed){
  requestAnimationFrame(()=>renderStage(+seek.value||0));
 }
 toggleMonitorCuePanel.onclick=()=>setMonitorCueCollapsed(!monitorCueCollapsed);
+function applyStageScaleMode(center=false){
+ const b=document.getElementById('stageScaleToggle');
+ if(b){
+   const equal=stageScaleMode==='equal';
+   b.textContent=equal?'等縮尺':'全体';
+   b.classList.toggle('active',equal);
+   b.setAttribute('aria-pressed',equal?'true':'false');
+ }
+ renderStage(+seek.value||0);
+ const vp=document.getElementById('stageViewport');
+ if(!vp)return;
+ requestAnimationFrame(()=>{
+   if(stageScaleMode==='equal'&&center){
+     vp.scrollLeft=Math.max(0,(vp.scrollWidth-vp.clientWidth)/2);
+     vp.scrollTop=Math.max(0,(vp.scrollHeight-vp.clientHeight)/2);
+   }else if(stageScaleMode==='fit'){
+     vp.scrollLeft=0;vp.scrollTop=0;
+   }
+ });
+}
+stageScaleToggle.onclick=()=>{stageScaleMode=stageScaleMode==='fit'?'equal':'fit';applyStageScaleMode(true)};
 resetQ.onclick=()=>selectCue(selectedCue);prevQ.onclick=()=>{const i=prevPlayableIndex(selectedCue);if(i>=0)selectCue(i)};nextQ.onclick=()=>{const i=nextPlayableIndex(selectedCue);if(i>=0)selectCue(i)};
 seek.oninput=e=>{running=false;cancelAnimationFrame(raf);const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t)};
 
