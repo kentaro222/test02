@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC試作 v51</title>
+<title>舞台機構シミュレーター / PC試作 v53</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -38,7 +38,7 @@ button,input,select{font:inherit}
 .ref-line.fly{border-top:2px dotted red}
 .ref-line.prosc{border-top:3px solid #111}
 .ref-label{position:absolute;right:8px;transform:translateY(-50%);background:#f8f8f6;padding:0 5px;font-size:12px}
-.dev-label{position:absolute;top:4px;transform:translateX(-50%);font-size:11px;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:1px;height:67px;overflow:hidden}
+.dev-label{position:absolute;top:2px;transform:translateX(-50%);font-size:9px;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:0;height:42px;overflow:hidden}
 .baton-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#111;transform:translate(-3px,-3px);z-index:4}
 .lift-wire{position:absolute;width:1px;background:#8b8b8b;transform:translateX(-50%);z-index:1}
 .hang-wire{position:absolute;width:2px;background:#333;transform:translateX(-50%);z-index:2}
@@ -142,7 +142,12 @@ button,input,select{font:inherit}
 @media(max-width:1250px){.save-state{display:none}.tab-btn{flex-basis:92px;font-size:10px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
 
 .main-monitor{height:100%;display:grid;grid-template-rows:65% 35%;gap:6px;padding:6px}
+.main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px;gap:6px}
+.main-monitor.cue-collapsed .monitor-cue-browser{display:none}
+.main-monitor.cue-collapsed .monitor-bottom{min-height:44px}
 .monitor-top,.monitor-bottom{min-height:0}
+.stage-panel-toggle{height:26px;margin-left:6px;padding:0 8px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap}
+.stage-panel-toggle:hover{background:#4a565b}
 .monitor-top .stage-card{height:100%}
 .toolbar-q{font-weight:800;color:#eff300;margin-left:auto}
 .monitor-validation{margin-left:10px;color:#ff7575;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
@@ -238,7 +243,7 @@ button,input,select{font:inherit}
     <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
     <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
   </div>
-  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v51</div>
+  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v53</div>
 </div>
 
 <section id="monitor" class="tab active">
@@ -247,6 +252,7 @@ button,input,select{font:inherit}
       <div class="stage-card">
         <div class="stage-toolbar compact">
           <span class="stage-title">断面モニタ</span>
+          <button id="toggleMonitorCuePanel" class="stage-panel-toggle" type="button" aria-expanded="true">Cue一覧を畳む ▲</button>
           <span class="toolbar-q" id="nowQNum">001.00</span>
           <span id="nowQName"></span><span id="monitorValidation" class="monitor-validation"></span>
         </div>
@@ -773,8 +779,8 @@ function csvNumber(v,maxDecimals=6){
  if(Math.abs(n-Math.round(n))<1e-9)return String(Math.round(n));
  return n.toFixed(maxDecimals).replace(/0+$/,'').replace(/\.$/,'');
 }
-function csvPositionLabel(d,pos){
- const label=currentLabelName(d,pos);
+function csvPositionLabel(d,pos,preferredName=null){
+ const label=currentLabelName(d,pos,preferredName);
  return label==='—'?'直入力':label;
 }
 function csvTargetLabel(d,r){
@@ -944,7 +950,7 @@ function exportCueSheetCsv(){
      return;
    }
 
-   const starts=positionBeforeCue(qi);
+   const startState=positionStateBeforeCue(qi),starts=startState.pos,startLabels=startState.labels;
    const runs=q.runs||[];
 
    // 運転行がないQもCUE番号だけは残す。
@@ -974,7 +980,7 @@ function exportCueSheetCsv(){
      const row=[
        ri===0?(formatCueNumber(q.number)||'000.00'):'',
        `${r.device}${d.itemName?' '+d.itemName:''}`,
-       csvPositionLabel(d,start),
+       csvPositionLabel(d,start,startLabels[r.device]),
        csvNumber(start),
        direction,
        csvTargetLabel(d,r),
@@ -1062,6 +1068,7 @@ function validateProjectPayload(obj){
      if(typeof l.name!=='string')return {ok:false,msg:`${id}: ラベル${li+1}の名称が不正です。`};
    }
    if(d.initialPosition!=null && !Number.isFinite(+d.initialPosition))return {ok:false,msg:`${id}: 初期位置が不正です。`};
+   if(d.initialLabelName!=null && typeof d.initialLabelName!=='string')return {ok:false,msg:`${id}: 初期位置ラベルが不正です。`};
  }
 
  for(let qi=0;qi<obj.cues.length;qi++){
@@ -1122,22 +1129,35 @@ function importProjectJson(obj){
 }
 function dev(id){return devices.find(d=>d.id===id)}
 function labelPos(d,name){const l=d.labels.find(x=>x.name===name);return l?+l.pos:null}
-function currentLabelName(d,pos){
+function currentLabelName(d,pos,preferredName=null){
  if(!d||!Array.isArray(d.labels))return '—';
- const l=d.labels.find(x=>Math.abs((+x.pos)-(+pos))<=1);
- return l?.name||'—';
+ const matches=d.labels.filter(x=>Math.abs((+x.pos)-(+pos))<=1);
+ if(preferredName){
+   const preferred=matches.find(x=>x.name===preferredName);
+   if(preferred)return preferred.name;
+ }
+ // A numeric position alone cannot identify which label was intended when labels overlap.
+ return matches.length===1?matches[0].name:'—';
 }
-function positionDisplayText(d,pos){
+function positionDisplayText(d,pos,preferredName=null){
  const mm=Math.round(+pos||0);
  if(positionDisplayMode==='mm')return `${mm} mm`;
- const label=currentLabelName(d,pos);
+ const label=currentLabelName(d,pos,preferredName);
  return label==='—'?`${mm} mm`:label;
 }
 function initialPosition(d){
  if(Number.isFinite(+d.initialPosition)) return +d.initialPosition;
  return +d.machineMax;
 }
+function inferredInitialLabelName(d){
+ if(!d||!Array.isArray(d.labels))return null;
+ const pos=initialPosition(d);
+ if(d.initialLabelName && d.labels.some(l=>l.name===d.initialLabelName && Math.abs(+l.pos-pos)<=1))return d.initialLabelName;
+ const matches=d.labels.filter(l=>Math.abs(+l.pos-pos)<=1);
+ return matches.length===1?matches[0].name:null;
+}
 function buildInitial(){const o={};devices.forEach(d=>o[d.id]=initialPosition(d));return o}
+function buildInitialLabels(){const o={};devices.forEach(d=>o[d.id]=inferredInitialLabelName(d));return o}
 function cueDeviceCounts(index){
  const counts=new Map();
  for(const r of cues[index]?.runs||[]){
@@ -1146,8 +1166,8 @@ function cueDeviceCounts(index){
  }
  return counts;
 }
-function positionBeforeCue(index){
- const pos=buildInitial();
+function positionStateBeforeCue(index){
+ const pos=buildInitial(),labels=buildInitialLabels();
  for(let i=0;i<index;i++){
    if(isMemoEntry(cues[i]))continue;
    const counts=cueDeviceCounts(i);
@@ -1155,11 +1175,17 @@ function positionBeforeCue(index){
      if((counts.get(String(r.device??''))||0)>1)continue;
      const start=pos[r.device];
      const v=validateRun(r,start);
-     if(v.ok)pos[r.device]=+r.target;
+     if(v.ok){
+       pos[r.device]=+r.target;
+       const d=dev(r.device);
+       labels[r.device]=(r.targetMode && r.targetMode!=='direct' && currentLabelName(d,+r.target,r.targetMode)!=='—')?r.targetMode:null;
+     }
    }
  }
- return pos;
+ return {pos,labels};
 }
+function positionBeforeCue(index){return positionStateBeforeCue(index).pos}
+function labelsBeforeCue(index){return positionStateBeforeCue(index).labels}
 const MAX_SPEED=1500;
 const MAX_ACCEL=750;
 const FIXED_ACC=0.1;
@@ -1484,11 +1510,22 @@ function stageLayout(width){
  devices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
  return {xMap,pxPerMM,totalMM:total};
 }
-function mmToY(mm,h){const top=84,bottom=52,max=21550;return top+(max-mm)/max*(h-top-bottom)}
+function mmToY(mm,h){const top=48,bottom=18,max=21550;return top+(max-mm)/max*(h-top-bottom)}
 function renderStage(t=0){
  const c=document.getElementById('stageCanvas'),w=c.clientWidth,h=c.clientHeight;
  if(!w||!h)return;
  const p=positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
+ const stageStartState=positionStateBeforeCue(selectedCue);
+ const activeCue=cues[selectedCue];
+ const preferredLabelForDevice=id=>{
+   const run=(activeCue?.runs||[]).find(r=>r.device===id);
+   if(run && t>=(+run.delay||0)){
+     const d=dev(id),end=+run.target,cur=p[id];
+     if(Math.abs(cur-end)<=1 && run.targetMode && run.targetMode!=='direct')return run.targetMode;
+     return null;
+   }
+   return stageStartState.labels[id]||null;
+ };
  for(const r of [{label:'',v:21550,cls:''},{label:'',v:8820,cls:'fly'},{label:'',v:0,cls:''}]){
   const y=mmToY(r.v,h),line=document.createElement('div');line.className='ref-line '+r.cls;line.style.top=y+'px';c.appendChild(line);
   if(r.label){const lab=document.createElement('div');lab.className='ref-label';lab.style.top=y+'px';lab.textContent=r.label;c.appendChild(lab);}
@@ -1535,7 +1572,7 @@ function renderStage(t=0){
     bridge.style.height=Math.max(8,Math.abs(y2-y1))+'px';
     bridge.style.width=(850*pxPerMM)+'px';
     bridge.style.minWidth=(850*pxPerMM)+'px';
-    bridge.title=`${d.id} ライトブリッジ\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos)}`;
+    bridge.title=`${d.id} ライトブリッジ\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos,preferredLabelForDevice(d.id))}`;
     c.appendChild(bridge);
   }
 
@@ -1562,7 +1599,7 @@ function renderStage(t=0){
     if(active)item.classList.add('active');
     item.style.left=x+'px';item.style.top=Math.min(y1,y2)+'px';item.style.height=Math.max(3,Math.abs(y2-y1))+'px';
     const clearance=hangingBottomMM(d,pos);
-    item.title=`${d.id} ${d.itemName||'吊り物'}\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos)}\n床まで ${clearance==null?'—':Math.round(clearance)+' mm'}`;c.appendChild(item);
+    item.title=`${d.id} ${d.itemName||'吊り物'}\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos,preferredLabelForDevice(d.id))}\n床まで ${clearance==null?'—':Math.round(clearance)+' mm'}`;c.appendChild(item);
   }
  });
  updateMonitorRunLive(t);
@@ -1620,18 +1657,30 @@ function togglePositionDisplayMode(){
  setPositionDisplayMode(positionDisplayMode==='label'?'mm':'label');
 }
 posModeToggle.onclick=togglePositionDisplayMode;
+let monitorCueCollapsed=false;
+function setMonitorCueCollapsed(collapsed){
+ monitorCueCollapsed=!!collapsed;
+ const shell=document.querySelector('.main-monitor');
+ if(shell)shell.classList.toggle('cue-collapsed',monitorCueCollapsed);
+ if(window.toggleMonitorCuePanel){
+   toggleMonitorCuePanel.textContent=monitorCueCollapsed?'Cue一覧を開く ▼':'Cue一覧を畳む ▲';
+   toggleMonitorCuePanel.setAttribute('aria-expanded',String(!monitorCueCollapsed));
+ }
+ requestAnimationFrame(()=>renderStage(+seek.value||0));
+}
+toggleMonitorCuePanel.onclick=()=>setMonitorCueCollapsed(!monitorCueCollapsed);
 resetQ.onclick=()=>selectCue(selectedCue);prevQ.onclick=()=>{const i=prevPlayableIndex(selectedCue);if(i>=0)selectCue(i)};nextQ.onclick=()=>{const i=nextPlayableIndex(selectedCue);if(i>=0)selectCue(i)};
 seek.oninput=e=>{running=false;cancelAnimationFrame(raf);const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t)};
 
 
 function runSummary(r){
  syncRunTargetFromLabel(r);const d=dev(r.device);
- const target=positionDisplayText(d,+r.target);
+ const target=positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode);
  return `${r.device} ${d?.itemName||''} → ${target}${r.use2?` / 2位置 ${Math.round(+r.pos2||0)} @${Math.round(+r.speed2||0)}`:''}`;
 }
 function renderMonitorCueBrowser(){
  const box=document.getElementById('monitorCueBrowser');if(!box)return;
- const starts=positionBeforeCue(selectedCue);
+ const startState=positionStateBeforeCue(selectedCue),starts=startState.pos,startLabels=startState.labels;
  box.innerHTML=cues.map((q,i)=>{
    if(isMemoEntry(q)){
      const memoText=escapeHtml(q.text||'メモ');
@@ -1648,7 +1697,7 @@ function renderMonitorCueBrowser(){
        const state=runLiveState(r,st,+seek.value||0);
        const cur=runPositionAt(r,st,+seek.value||0);
        const clearance=hangingBottomMM(d,cur);
-       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,startLabels[r.device]))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
      }).join('');
      detail=`<div class="mon-run-grid">${cells}</div>`;
    }
@@ -1752,7 +1801,7 @@ function renderCueEditor(){
    };
    return;
  }
- const starts=positionBeforeCue(selectedListIndex),counts=cueDeviceCounts(selectedListIndex);
+ const startState=positionStateBeforeCue(selectedListIndex),starts=startState.pos,startLabels=startState.labels,counts=cueDeviceCounts(selectedListIndex);
  const rows=(q.runs||[]).map((r,ri)=>{
    const d=dev(r.device)||devices[0],fixed=d.type==='constant';
    const st=starts[r.device]??initialPosition(d);
@@ -1766,7 +1815,7 @@ function renderCueEditor(){
    return `<tr class="${validation.ok?'':'invalid'}">
     <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
     <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
-    <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d)))}</td>
+    <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d),startLabels[r.device]))}</td>
     <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
     <td><input class="target" data-ri="${ri}" data-f="target" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
     <td class="readonly">${Math.round(dist)}</td>
@@ -1877,9 +1926,11 @@ pasteCueBtn.onclick=()=>{if(!cueClipboard)return;pushUndoSnapshot();const c=deep
 renumberOpenBtn.onclick=()=>{document.querySelector('[data-tab="cue"]').click();setTimeout(()=>{const b=document.getElementById('renumberBox');if(b)b.style.display='grid'},0)};
 
 function initialLabelOptions(d,current){
- let html=d.labels.map(l=>`<option value="${l.pos}" ${Math.abs(+l.pos-(+current))<0.001?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('');
- const matched=d.labels.some(l=>Math.abs(+l.pos-(+current))<0.001);
- html+=`<option value="direct" ${matched?'':'selected'}>直接入力</option>`;
+ const preferred=inferredInitialLabelName(d);
+ let selectedIndex=-1;
+ if(preferred){selectedIndex=d.labels.findIndex(l=>l.name===preferred && Math.abs(+l.pos-(+current))<=1)}
+ let html=d.labels.map((l,i)=>`<option value="label:${i}" ${i===selectedIndex?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('');
+ html+=`<option value="direct" ${selectedIndex<0?'selected':''}>直接入力</option>`;
  return html;
 }
 function renderInitialBulk(){
@@ -1895,15 +1946,22 @@ function renderInitialBulk(){
   body.appendChild(tr);
  });
  body.querySelectorAll('select[data-bulk-k="label"]').forEach(sel=>sel.onchange=()=>{
-   if(sel.value==='direct')return;
-   const i=+sel.dataset.bulkI;
+   const i=+sel.dataset.bulkI,d=devices[i];if(!d)return;
    pushUndoSnapshot();
-   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
-   input.value=Math.round(+sel.value);
-   syncInitialFromTable();
+   if(sel.value==='direct'){d.initialLabelName=null;scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);return;}
+   if(sel.value.startsWith('label:')){
+     const li=+sel.value.slice(6),l=d.labels?.[li];if(!l)return;
+     d.initialLabelName=l.name;
+     const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+     input.value=Math.round(+l.pos);
+     d.initialPosition=+l.pos;
+     scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
+   }
  });
  body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>input.addEventListener('input',()=>{
    pushUndoSnapshotForInput(`initial:${input.dataset.bulkI}`);
+   const d=devices[+input.dataset.bulkI];if(d)d.initialLabelName=null;
+   const sel=body.querySelector(`select[data-bulk-i="${input.dataset.bulkI}"][data-bulk-k="label"]`);if(sel)sel.value='direct';
    syncInitialFromTable();
  }));
 }
@@ -2035,7 +2093,8 @@ setAllTop.onclick=()=>{
    const input=body.querySelector(`input[data-bulk-i="${i}"]`);
    const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
    if(input)input.value=Math.round(p);
-   if(sel){const match=d.labels.find(x=>Math.abs(+x.pos-p)<0.001);sel.value=match?String(match.pos):'direct';}
+   d.initialLabelName=null;
+   if(sel)sel.value='direct';
  });
  syncInitialFromTable();
 };
@@ -2049,10 +2108,8 @@ setEmptyUpper.onclick=()=>{
    const input=body.querySelector(`input[data-bulk-i="${i}"]`);
    const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
    if(input)input.value=Math.round(+p);
-   if(sel){
-     const match=d.labels.find(x=>Math.abs(+x.pos-(+p))<0.001);
-     sel.value=match?String(match.pos):'direct';
-   }
+   d.initialLabelName=null;
+   if(sel)sel.value='direct';
  });
  syncInitialFromTable();
 };
