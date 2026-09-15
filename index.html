@@ -1,0 +1,1923 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台機構シミュレーター / PC試作 v46</title>
+<style>
+:root{
+  --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
+  --muted:#aeb9bd;--blue:#0076bd;--blue2:#0696dc;--cyan:#42e4ea;--yellow:#eff300;
+  --red:#ff4c55;--green:#55d47b;--black:#0c0e0f;--input:#202528;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"BIZ UDGothic","BIZ UDゴシック","MS Gothic",monospace;overflow:hidden}
+button,input,select{font:inherit}
+.topbar{height:54px;display:flex;align-items:center;gap:8px;padding:7px 10px;background:#191d1f;border-bottom:1px solid #667174}
+.tab-btn{height:38px;min-width:145px;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;cursor:pointer}
+.tab-btn.active{background:#0898df;box-shadow:inset 0 -3px 0 #9ef0ff}
+.top-file-actions{display:flex;gap:6px;margin-left:auto}
+.file-btn{height:32px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 12px;cursor:pointer}
+.file-btn:hover{background:#4a565b}
+.history-actions{display:flex;gap:4px;margin-left:auto}
+.history-actions button{height:30px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:3px;padding:0 8px;font-family:inherit;cursor:pointer}
+.history-actions button:disabled{opacity:.35;cursor:default}
+.history-actions button:not(:disabled):hover{background:#465157}
+.top-file-actions{margin-left:4px}
+.file-btn.danger{background:#7d292e;border-color:#b85259}
+.file-btn.danger:hover{background:#96343b}
+.save-state{font-size:12px;color:#8fd6a4;min-width:58px;text-align:right}.save-state.saving{color:#ffd86b}.app-title{font-size:12px;color:#9ba7ab}
+.tab{display:none;height:calc(100vh - 54px)}
+.tab.active{display:block}
+.monitor-layout{height:100%;display:grid;grid-template-columns:1fr 325px;gap:8px;padding:8px}
+.stage-card,.side-card,.settings-shell,.cue-main{background:#f8f8f6;border:1px solid #778083;color:#111;position:relative}
+.stage-toolbar{height:34px;background:#23282a;color:#fff;display:flex;align-items:center;gap:10px;padding:4px 10px}
+.stage-title{font-weight:700}
+.stage-canvas{position:absolute;left:0;right:0;top:34px;bottom:0;overflow:hidden;background:#f8f8f6}
+.ref-line{position:absolute;left:3%;right:3%;border-top:2px solid #111}
+.ref-line.fly{border-top:2px dotted red}
+.ref-line.prosc{border-top:3px solid #111}
+.ref-label{position:absolute;right:8px;transform:translateY(-50%);background:#f8f8f6;padding:0 5px;font-size:12px}
+.dev-label{position:absolute;top:4px;transform:translateX(-50%);font-size:11px;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:1px;height:67px;overflow:hidden}
+.baton-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#111;transform:translate(-3px,-3px);z-index:4}
+.lift-wire{position:absolute;width:1px;background:#8b8b8b;transform:translateX(-50%);z-index:1}
+.hang-wire{position:absolute;width:2px;background:#333;transform:translateX(-50%);z-index:2}
+.hang-wire.active{background:#007fd0}
+.item{position:absolute;transform:translateX(-50%);min-width:5px;border:1px solid #111;background:var(--item-color,#d9d9d9)}
+.item.curtain{background:var(--item-color,#cc1d25);border-color:#9f1117;min-width:10px}
+.item.lb{background:#cfd4d8;border:2px solid #555;min-width:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.item.uhl{background:#f4a200;border:1px solid #8e5b00;min-width:8px}
+.item.hasname{min-width:7px}
+.item.active{box-shadow:0 0 0 3px rgba(0,133,255,.35)}
+.side-card{background:#202527;color:#fff;padding:10px;overflow:auto}
+.now-q{background:#111;border:2px solid #eff300;padding:10px;margin-bottom:10px}
+.now-q .qnum{font-size:25px;color:#eff300;font-weight:800}
+.transport{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.transport button{background:#0075b8;border:1px solid #17a0e4;color:#fff;padding:10px 5px;border-radius:3px;font-weight:700}
+.timebar{width:100%}
+.status-list{font-size:12px;line-height:1.6}
+.status-row{display:grid;grid-template-columns:48px 1fr 74px;gap:6px;border-bottom:1px solid #454d50;padding:4px 0}
+.cue-layout{height:100%;display:grid;grid-template-columns:310px 1fr}
+.cue-left{background:#111417;border-right:1px solid #778083;padding:8px;color:#fff;overflow:hidden}
+.cue-head{height:74px;background:#ff7b80;color:#000;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:8px}
+.cue-list{height:calc(100% - 178px);overflow:auto;border:1px solid #555;background:#020303}
+.cue-list-item{padding:5px 8px;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cue-list-item.selected{background:#00a3ef;color:#fff}
+.cue-list-item.marker{color:#f0f000;font-weight:700}
+.cue-list-item.memo{color:#ffe98c;background:#252515;font-weight:800;border-top:1px solid #5b5632;border-bottom:1px solid #5b5632;padding-left:14px}
+.cue-list-item.memo.selected{background:#665d18;color:#fff6bd}
+.memo-editor{max-width:900px;background:#303436;border:1px solid #737d81;padding:14px}
+.memo-editor h2{margin:0 0 10px;color:#ffe98c}
+.memo-editor textarea{width:100%;min-height:110px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:10px;font-size:17px;line-height:1.5}
+.memo-editor .memo-actions{display:flex;gap:7px;margin-top:10px}
+.memo-editor .memo-actions button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:7px 12px}
+.memo-editor .memo-actions .danger{background:#8f2b31;border-color:#d85c64}
+.cue-left button{width:100%;margin-top:8px;background:#0075b8;color:#fff;border:1px solid #159ad9;padding:10px}
+.cue-main{background:#5f6162;color:#fff;overflow:auto;padding:10px}
+.q-block{margin-bottom:18px}
+.q-header{display:grid;grid-template-columns:70px 360px auto;gap:8px;align-items:center;margin-bottom:5px}
+.q-number{background:#f1f1f1;color:#111;padding:5px 8px;border:1px solid #222;font-weight:800;text-align:center}
+.q-name{background:#050606;color:#fff;border:1px solid #222;padding:5px 8px;height:30px}
+.q-actions button{background:#006eae;border:1px solid #16a0e7;color:#fff;padding:5px 9px;margin-right:4px}
+.run-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+.run-table th{background:#006fae;border:1px solid #86a4b3;padding:4px 2px;white-space:nowrap}
+.run-table td{background:#404244;border:1px solid #858585;padding:3px}
+.run-table input,.run-table select{width:100%;background:#303437;color:#fff;border:1px solid #888;padding:4px}
+.run-table .target{color:#3de7e7}
+.run-table .readonly{background:#292c2e;color:#bbb}
+.add-row{margin-top:5px;background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 12px}
+.editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+.editor-toolbar button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 10px}
+.editor-toolbar button.danger{background:#8f2b31;border-color:#d85c64}
+.editor-toolbar button.mutedbtn{background:#4b5357;border-color:#737f84}
+.renumber-box{display:grid;grid-template-columns:repeat(4,minmax(120px,180px));gap:8px;align-items:end;background:#33393c;border:1px solid #626d72;padding:8px;margin:8px 0}
+.renumber-box label{font-size:11px;color:#c0c9cc;display:block;margin-bottom:3px}
+.renumber-box input{width:100%;background:#202528;color:#fff;border:1px solid #687479;padding:5px}
+.row-select{text-align:center}
+.run-table td:first-child,.run-table th:first-child{text-align:center}
+.settings-shell{height:100%;display:grid;grid-template-columns:220px 1fr;background:#2b3032;color:#fff}
+.device-list{border-right:1px solid #6c777b;padding:8px;background:#181c1e;overflow:auto}
+.device-list h3{margin:3px 0 8px}
+.device-btn{display:flex;width:100%;justify-content:space-between;gap:8px;padding:7px 9px;background:#272d30;color:#fff;border:1px solid #444;margin-bottom:3px;cursor:pointer}
+.device-btn.active{background:#0077b8;border-color:#20a9ed}
+.settings-detail{padding:14px;overflow:auto}
+.hanging-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 12px}
+.hanging-tools button{height:30px;padding:0 10px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;font-family:inherit;cursor:pointer}
+.hanging-tools button:hover{background:#4a565b}
+.hanging-tools button.danger{background:#7d292e;border-color:#ba5259}
+.hanging-tools button:disabled{opacity:.42;cursor:default}
+.hanging-clip-state{font-size:11px;color:#aeb9bd;margin-left:4px}
+.settings-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.field{background:#343a3d;border:1px solid #50585c;padding:8px}
+.field label{display:block;color:#b9c5c9;font-size:12px;margin-bottom:4px}
+.field input,.field select{width:100%;background:#202528;color:#fff;border:1px solid #697479;padding:6px}
+.field input[readonly]{color:#aab2b5;background:#252a2c}
+.notice{border:1px solid #d6a300;background:#4f4300;color:#ffe985;padding:8px;margin-bottom:10px}
+.label-table{width:100%;border-collapse:collapse;max-width:900px}
+.label-table th{background:#006fae;padding:6px;border:1px solid #7e9ca8}
+.label-table td{border:1px solid #596367;padding:5px;background:#383e41}
+.label-table input{width:100%;background:#22282a;color:#fff;border:1px solid #687479;padding:6px}
+.savebar{position:sticky;bottom:0;background:#2b3032;padding:12px 0}
+.primary{background:#0077b8;border:1px solid #13a4e9;color:#fff;padding:8px 18px;font-weight:700}
+.small-muted{font-size:12px;color:#aab5b9}
+.initial-page{height:100%;background:#252b2e;color:#fff;padding:14px;overflow:auto}
+.initial-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.initial-header h2{margin:0 0 4px}
+.initial-actions{display:flex;gap:8px;flex-wrap:wrap}
+.primary.secondary{background:#4a5459;border-color:#718087}
+.initial-table-wrap{border:1px solid #596469;background:#1d2224}
+.initial-full-table{width:100%;border-collapse:collapse;font-size:13px}
+.initial-full-table th{position:sticky;top:0;background:#006fae;border:1px solid #7896a4;padding:7px;z-index:2}
+.initial-full-table td{background:#363c3f;border:1px solid #596367;padding:5px}
+.initial-full-table tr:nth-child(even) td{background:#303639}
+.initial-full-table select,.initial-full-table input{width:100%;background:#202528;color:#fff;border:1px solid #687479;padding:6px}
+.initial-full-table .devcol{width:82px;font-weight:800}
+.initial-full-table .itemcol{width:240px}
+.initial-full-table .labelcol{width:260px}
+.initial-full-table .mmcol{width:150px}
+.initial-full-table .rangecol{width:170px;color:#b9c5c9}
+@media(max-width:1200px){.settings-grid{grid-template-columns:repeat(2,1fr)}}
+
+.main-monitor{height:100%;display:grid;grid-template-rows:65% 35%;gap:6px;padding:6px}
+.monitor-top,.monitor-bottom{min-height:0}
+.monitor-top .stage-card{height:100%}
+.toolbar-q{font-weight:800;color:#eff300;margin-left:auto}
+.monitor-validation{margin-left:10px;color:#ff7575;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.cue-validation{display:none;background:#4b171a;color:#ffb1b5;border:1px solid #d45159;padding:7px 9px;margin:7px 0;font-size:12px}
+.cue-validation.show{display:block}
+.position-mode{display:inline-flex;align-items:center;gap:2px;margin-left:6px}
+.position-mode .mode-label{font-size:11px;color:#c4ced1;margin-right:2px}
+.position-mode button{height:26px;padding:0 6px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px}
+.position-mode button.active{background:#0079b7;border-color:#20b7ff;font-weight:800}
+.run-table tr.invalid td{background:#4b2528}
+.run-table tr.invalid input,.run-table tr.invalid select{border-color:#e0676d}
+.readonly-derived{background:#262a2c!important;color:#d8e5e8!important}
+.monitor-bottom{background:#171b1d;border:1px solid #667174;color:#fff;display:flex;flex-direction:column}
+.monitor-cue-head{height:44px;display:flex;align-items:center;gap:7px;padding:5px 8px;background:#252b2e;border-bottom:1px solid #596367;flex-wrap:nowrap}
+.monitor-cue-head button{height:32px;background:#006fad;color:#fff;border:1px solid #13a5ee;padding:4px 10px;border-radius:3px;font-weight:700;white-space:nowrap}
+.monitor-cue-browser{flex:1;overflow:auto;padding:5px;background:#090b0c}
+.monitor-cue-head button.go{background:#0b7f3d;border-color:#39bd72}
+.monitor-cue-head .clock{min-width:64px;text-align:right;font-variant-numeric:tabular-nums;color:#fff}
+.control-separator{width:1px;height:26px;background:#667174;margin:0 2px}
+.cue-seek{flex:1;min-width:180px;max-width:520px}
+.mon-q{border:1px solid #3f474a;margin-bottom:4px;background:#191d1f;cursor:pointer}
+.mon-q.selected{border:2px solid #00a3ef;background:#20292d}
+.mon-q-header{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center;padding:5px 8px;position:sticky;left:0}
+.mon-q.memo{overflow:hidden}
+.mon-q.memo .mon-q-header{
+ display:block !important;
+ grid-template-columns:none !important;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ width:100%;
+ max-width:100%;
+ min-width:0;
+ box-sizing:border-box;
+ padding:6px 12px;
+ font-weight:800;
+ color:#ffe98c;
+}
+.mon-q-num{font-weight:800;color:#f0f000}
+.mon-q.selected .mon-q-num{color:#50ddff}
+.mon-q-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-q-summary{font-size:11px;color:#b7c1c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-run-grid{display:grid;grid-template-columns:200px 72px 80px 78px 72px 92px 64px 56px 56px 56px 68px 68px 64px;gap:1px;background:#5c666a;border-top:1px solid #5c666a;font-size:11px;min-width:1060px}
+.mon-run-grid>div{background:#303639;padding:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-run-grid .mh{background:#006fae;font-weight:700}
+.mon-current{font-variant-numeric:tabular-nums;font-weight:800;color:#8ee7ff}
+.mon-clearance{font-variant-numeric:tabular-nums;font-weight:800;color:#d6f0b8}
+.mon-state{font-weight:800;text-align:center}
+.mon-state.wait{color:#aab3b7}
+.mon-state.run{color:#bde7ff}
+.mon-state.done{color:#8fd29f}
+.mon-state.switch{background:#8a5a00!important;color:#fff0a6!important;box-shadow:inset 0 0 0 1px #e4b13e}
+.mon-state.second{background:#705d00!important;color:#fff59c!important;box-shadow:inset 0 0 0 1px #d8c640}
+.mon-current.second{background:#4d4300!important;color:#fff7ad!important}
+
+.item{--item-color:#d9d9d9;background:var(--item-color)}
+.shaku-shell{height:100%;box-sizing:border-box;padding:22px;background:#1a1e20;color:#fff;overflow:auto}
+.shaku-panel{max-width:720px;background:#f8f8f6;color:#111;border:1px solid #778083;padding:20px}
+.shaku-panel h2{margin:0 0 5px;font-size:20px}
+.shaku-note{font-size:12px;color:#596368;margin-bottom:18px}
+.shaku-grid{display:grid;grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:12px;align-items:end}
+.shaku-field label{display:block;font-size:13px;font-weight:800;margin-bottom:5px}
+.shaku-field input{width:100%;box-sizing:border-box;background:#fff;color:#111;border:1px solid #697479;padding:10px;font-family:inherit;font-size:22px}
+.shaku-arrow{text-align:center;font-size:22px;font-weight:800;padding-bottom:10px}
+.shaku-result{margin-top:16px;border-top:1px solid #a6afb2;padding-top:13px;font-size:13px;color:#4c565a;line-height:1.7}
+.shaku-result strong{font-size:17px;color:#111}
+.simple-calc{margin-top:22px;border-top:2px solid #8b9498;padding-top:18px}
+.simple-calc h3{margin:0 0 10px;font-size:17px}
+.simple-calc-row{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr) 40px minmax(0,1fr);gap:8px;align-items:center}
+.simple-calc-row input,.simple-calc-row select{width:100%;box-sizing:border-box;background:#fff;color:#111;border:1px solid #697479;padding:9px;font-family:inherit;font-size:20px}
+.simple-calc-eq{text-align:center;font-size:22px;font-weight:800}
+.simple-calc-result{margin-top:10px;font-size:13px;color:#596368}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="tab-btn active" data-tab="monitor">断面モニタ</button>
+  <button class="tab-btn" data-tab="cue">Cue</button>
+  <button class="tab-btn" data-tab="settings">装置設定</button>
+  <button class="tab-btn" data-tab="initial">初期位置</button>
+  <button class="tab-btn" data-tab="shakuCalc">尺計算</button>
+  <div class="history-actions">
+    <button id="undoBtn" title="戻す (Ctrl+Z)" disabled>↶ 戻す</button>
+    <button id="redoBtn" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ やり直す</button>
+  </div>
+  <div class="top-file-actions">
+    <button id="csvInitBtn" class="file-btn">装置CSV読込</button>
+    <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
+    <button id="exportDeviceCsvBtn" class="file-btn">装置CSV保存</button>
+    <button id="exportCueCsvBtn" class="file-btn">キューCSV保存</button>
+    <button id="exportJsonBtn" class="file-btn">JSON保存</button>
+    <button id="importJsonBtn" class="file-btn">JSON読込</button>
+    <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
+    <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
+  </div>
+  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v46</div>
+</div>
+
+<section id="monitor" class="tab active">
+  <div class="main-monitor">
+    <div class="monitor-top">
+      <div class="stage-card">
+        <div class="stage-toolbar compact">
+          <span class="stage-title">断面モニタ</span>
+          <span class="toolbar-q" id="nowQNum">001.00</span>
+          <span id="nowQName"></span><span id="monitorValidation" class="monitor-validation"></span>
+        </div>
+        <div class="stage-canvas" id="stageCanvas"></div>
+      </div>
+    </div>
+    <div class="monitor-bottom">
+      <div class="monitor-cue-head">
+        <strong>Cue</strong>
+        <button id="prevQ">前Q</button>
+        <button id="resetQ">頭出し</button>
+        <button id="nextQ">次Q</button>
+        <div class="position-mode"><span class="mode-label">表示</span><button id="posModeToggle">ラベル</button></div>
+        <span class="control-separator"></span>
+        <button id="goBtn" class="go">GO</button>
+        <button id="pauseBtn">PAUSE</button>
+        <button id="stopBtn">STOP</button>
+        <span id="monitorClock" class="clock">0.0 s</span>
+        <input id="seek" class="timebar cue-seek" type="range" min="0" max="10" step="0.05" value="0">
+      </div>
+      <div id="monitorCueBrowser" class="monitor-cue-browser"></div>
+    </div>
+  </div>
+</section>
+
+<section id="cue" class="tab">
+  <div class="cue-layout">
+    <aside class="cue-left">
+      <div class="cue-head">Cue</div>
+      <div class="cue-list" id="cueList"></div>
+      <button id="newCueBtn">キュー作成</button>
+      <button id="newMemoBtn">メモ挿入</button>
+      <button id="pasteCueBtn">Q貼り付け</button>
+      <button id="renumberOpenBtn">Q番号振り直し</button>
+    </aside>
+    <main class="cue-main" id="cueEditor"></main>
+  </div>
+</section>
+
+<section id="settings" class="tab">
+  <div class="settings-shell">
+    <aside class="device-list"><h3>装置</h3><div id="deviceList"></div></aside>
+    <main class="settings-detail">
+      <h2 id="setTitle" style="margin-top:0">B1</h2>
+      <div class="hanging-tools">
+        <button id="copyHangingBtn">吊り物コピー</button>
+        <button id="cutHangingBtn">カット</button>
+        <button id="pasteHangingBtn" disabled>貼り付け</button>
+        <button id="deleteHangingBtn" class="danger">削除</button>
+        <span id="hangingClipState" class="hanging-clip-state">コピーなし</span>
+      </div>
+      <div id="csvStateNotice" class="small-muted" style="margin-bottom:8px">初回は上部の「装置CSV読込」から装置設定を作成できます。</div>
+      <div id="specialNotice"></div>
+      <div class="settings-grid">
+        <div class="field"><label>機構名称</label><input id="s_id" readonly></div>
+        <div class="field"><label>吊物名称</label><input id="s_item"></div>
+        <div class="field"><label>道具高さ</label><input id="s_height" type="number"><div class="small-muted">mm</div></div>
+        <div class="field"><label>桁吊り</label><input id="s_hang" type="number" value="0"><div class="small-muted">mm</div></div>
+        <div class="field"><label>表示色</label><select id="s_color">
+<option value="#333333">黒</option><option value="#6f767a">グレー</option><option value="#d9d9d9">白</option>
+<option value="#b51f2e">赤</option><option value="#d97b16">オレンジ</option><option value="#d6bf28">黄</option>
+<option value="#3d8b4f">緑</option><option value="#2e70b8">青</option><option value="#7652a3">紫</option>
+</select></div>
+        <div class="field"><label>透過率</label><input id="s_opacity" type="range" min="10" max="100" step="5" value="100"><div class="small-muted"><span id="s_opacityValue">100</span>%</div></div>
+      </div>
+      <h3>目標地ラベル</h3>
+      <table class="label-table"><thead><tr><th style="width:60px">No.</th><th>名称</th><th style="width:220px">位置 mm</th></tr></thead><tbody id="labelBody"></tbody></table>
+      <div class="small-muted">変更内容は自動保存されます。</div>
+    </main>
+  </div>
+</section>
+
+<section id="initial" class="tab">
+  <div class="initial-page">
+    <div class="initial-header">
+      <div>
+        <h2>初期位置</h2>
+        <div class="small-muted">公演開始時の各機構位置を設定します。ラベル選択または mm 直接入力ができます。</div>
+      </div>
+      <div class="initial-actions">
+        <button id="setAllTop" class="primary">全装置を最上限</button>
+        <button id="setEmptyUpper" class="primary secondary">空バトンを上限</button>
+        <span class="small-muted">変更内容は自動保存されます。</span>
+      </div>
+    </div>
+    <div class="initial-table-wrap">
+      <table class="initial-full-table">
+        <thead>
+          <tr><th>機構</th><th>吊物</th><th>初期ラベル</th><th>初期位置 mm</th><th>範囲</th></tr>
+        </thead>
+        <tbody id="initialBulkBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="shakuCalc" class="tab">
+  <div class="shaku-shell">
+    <div class="shaku-panel">
+      <h2>尺 ⇄ mm</h2>
+      <div class="shaku-note">実機換算：1尺 = 303mm。尺からmmへの変換結果は1mm単位で四捨五入します。</div>
+      <div class="shaku-grid">
+        <div class="shaku-field">
+          <label for="shakuInput">尺</label>
+          <input id="shakuInput" type="number" min="0" step="0.001" placeholder="例：18.5">
+        </div>
+        <div class="shaku-arrow">⇄</div>
+        <div class="shaku-field">
+          <label for="mmInput">mm</label>
+          <input id="mmInput" type="number" min="0" step="1" placeholder="例：5606">
+        </div>
+      </div>
+      <div id="shakuResult" class="shaku-result">尺またはmmを入力すると自動換算します。</div>
+
+      <div class="simple-calc">
+        <h3>簡易電卓</h3>
+        <div class="simple-calc-row">
+          <input id="calcA" type="number" step="any" placeholder="数値">
+          <select id="calcOp" aria-label="演算">
+            <option value="+">＋</option>
+            <option value="-">－</option>
+          </select>
+          <input id="calcB" type="number" step="any" placeholder="数値">
+          <div class="simple-calc-eq">＝</div>
+          <input id="calcResult" type="text" readonly placeholder="結果">
+        </div>
+        <div id="calcMessage" class="simple-calc-result">足し算・引き算だけの簡易電卓です。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+const BASE_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
+const KEY='stageCuePrototypeV3';
+const deep=x=>JSON.parse(JSON.stringify(x));
+let devices=deep(BASE_DEVICES);
+let selectedDevice='B1';
+let selectedCue=2;
+let running=false, startStamp=0, raf=null;
+let cues=[
+ {number:"001.00",name:"新規キュー",runs:[]}
+];
+let livePositions={};
+let selectedListIndex=0;
+let positionDisplayMode='label';
+let cueClipboard=null;
+let hangingItemClipboard=null;
+let runClipboard=[];
+
+function isMemoEntry(q){return !!q && q.kind==='memo'}
+function normalizeCueEntries(){
+ cues.forEach(q=>{
+   if(isMemoEntry(q)){
+     q.text=String(q.text??q.name??'').trim();
+     delete q.number;
+     delete q.runs;
+   }else{
+     q.number=formatCueNumber(q.number)||'000.00';
+     q.runs=q.runs||[];
+     q.runs.forEach(r=>inferRunTargetMode(r));
+   }
+ });
+}
+function playableCueCount(){return cues.filter(q=>!isMemoEntry(q)).length}
+function findPlayableFrom(index,dir=1){
+ for(let i=index;i>=0&&i<cues.length;i+=dir){
+   if(!isMemoEntry(cues[i]))return i;
+ }
+ return -1;
+}
+function nextPlayableIndex(index){return findPlayableFrom(index+1,1)}
+function prevPlayableIndex(index){return findPlayableFrom(index-1,-1)}
+function closestPlayableIndex(index){
+ let n=findPlayableFrom(index,1);
+ if(n>=0)return n;
+ return findPlayableFrom(index,-1);
+}
+function previousPlayableNumber(index){
+ for(let i=Math.min(index,cues.length-1);i>=0;i--){
+   if(!isMemoEntry(cues[i]))return cues[i].number;
+ }
+ return '000.00';
+}
+function lastPlayableNumber(){
+ for(let i=cues.length-1;i>=0;i--){
+   if(!isMemoEntry(cues[i]))return cues[i].number;
+ }
+ return '000.00';
+}
+
+function load(){
+ try{
+  const d=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(d?.devices) devices=d.devices;
+  if(d?.cues){cues=d.cues;normalizeCueEntries();}
+ }catch(e){}
+}
+let saveTimer=null;
+function save(){
+ localStorage.setItem(KEY,JSON.stringify({devices,cues}));
+ if(typeof saveState!=='undefined'){saveState.textContent='保存済み';saveState.classList.remove('saving')}
+}
+function scheduleSave(){
+ if(typeof saveState!=='undefined'){saveState.textContent='保存中…';saveState.classList.add('saving')}
+ clearTimeout(saveTimer);saveTimer=setTimeout(save,350);
+}
+
+const HISTORY_LIMIT=50;
+let undoStack=[];
+let redoStack=[];
+let historyInputKey=null;
+let historyInputTimer=null;
+
+function historySnapshot(){
+ return {
+   devices:deep(devices),
+   cues:deep(cues),
+   selectedDevice,
+   selectedCue,
+   selectedListIndex
+ };
+}
+function updateHistoryButtons(){
+ if(typeof undoBtn!=='undefined')undoBtn.disabled=undoStack.length===0;
+ if(typeof redoBtn!=='undefined')redoBtn.disabled=redoStack.length===0;
+}
+function endHistoryInputGroup(){
+ historyInputKey=null;
+ clearTimeout(historyInputTimer);
+ historyInputTimer=null;
+}
+function pushUndoSnapshot(){
+ endHistoryInputGroup();
+ undoStack.push(historySnapshot());
+ if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+ redoStack=[];
+ updateHistoryButtons();
+}
+function pushUndoSnapshotForInput(key){
+ if(historyInputKey!==key){
+   endHistoryInputGroup();
+   undoStack.push(historySnapshot());
+   if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+   redoStack=[];
+   historyInputKey=key;
+   updateHistoryButtons();
+ }
+ clearTimeout(historyInputTimer);
+ historyInputTimer=setTimeout(()=>{historyInputKey=null;historyInputTimer=null},700);
+}
+function clearEditHistory(){
+ undoStack=[];
+ redoStack=[];
+ endHistoryInputGroup();
+ updateHistoryButtons();
+}
+function restoreHistorySnapshot(s){
+ if(!s)return;
+ running=false;
+ cancelAnimationFrame(raf);
+ clearTimeout(saveTimer);
+
+ devices=deep(s.devices);
+ cues=deep(s.cues);
+ normalizeCueEntries();
+
+ selectedDevice=dev(s.selectedDevice)?s.selectedDevice:(devices.find(d=>d.id==='B1')?.id||devices[0]?.id);
+ selectedListIndex=Math.max(0,Math.min(cues.length-1,+s.selectedListIndex||0));
+ selectedCue=Math.max(0,Math.min(cues.length-1,+s.selectedCue||0));
+ if(isMemoEntry(cues[selectedCue]))selectedCue=closestPlayableIndex(selectedCue);
+ if(selectedCue<0)selectedCue=findPlayableFrom(0,1);
+
+ save();
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+
+ if(selectedCue>=0 && cues[selectedCue] && !isMemoEntry(cues[selectedCue])){
+   const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+   nowQNum.textContent=formatCueNumber(q.number)||'000.00';
+   nowQName.textContent=q.name;
+   seek.max=dur.toFixed(2);
+   seek.value=0;
+   monitorClock.textContent='0.0 s';
+   renderStage(0);
+   updateMonitorValidation();
+ }
+ updateHistoryButtons();
+}
+function undoEdit(){
+ if(!undoStack.length)return;
+ endHistoryInputGroup();
+ redoStack.push(historySnapshot());
+ if(redoStack.length>HISTORY_LIMIT)redoStack.shift();
+ const s=undoStack.pop();
+ restoreHistorySnapshot(s);
+}
+function redoEdit(){
+ if(!redoStack.length)return;
+ endHistoryInputGroup();
+ undoStack.push(historySnapshot());
+ if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+ const s=redoStack.pop();
+ restoreHistorySnapshot(s);
+}
+
+function resetProjectData(){
+ const ok=confirm(
+   '装置設定・初期位置・Cue・メモをすべて初期化します。\n\n' +
+   'この操作は元に戻せません。必要なら先にJSON保存してください。\n\n' +
+   '全データをリセットしますか？'
+ );
+ if(!ok)return;
+
+ running=false;
+ cancelAnimationFrame(raf);
+ clearTimeout(saveTimer);
+
+ // 劇場固有の機械構成・機械限界・LB/UHL等の固定仕様だけ残す。
+ devices=deep(BASE_DEVICES);
+ devices.forEach(d=>{
+   d.initialPosition=+d.machineMax;
+   if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#6f767a';
+   if(d.displayOpacity==null)d.displayOpacity=1;
+ });
+
+ // 画面の構造上、Cueを完全0件にはせず、空の001.00を1件だけ置く。
+ cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+
+ selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+ selectedCue=0;
+ selectedListIndex=0;
+ cueClipboard=null;
+ hangingItemClipboard=null;
+ runClipboard=[];
+ livePositions={};
+ positionDisplayMode='label';
+
+ localStorage.removeItem(KEY);
+ clearEditHistory();
+ save();
+
+ const notice=document.getElementById('csvStateNotice');
+ if(notice)notice.textContent='リセット済み：装置CSVを読み込むと新しい仕込みを作成できます。';
+
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+ selectCue(0);
+
+ alert('全データをリセットしました。\n装置設定は空、初期位置は各装置の最上限です。');
+}
+
+function parseCsvLine(line){
+ const out=[];let cur='',quoted=false;
+ for(let i=0;i<line.length;i++){
+   const ch=line[i];
+   if(ch==='"'){
+     if(quoted && line[i+1]==='"'){cur+='"';i++;}
+     else quoted=!quoted;
+   }else if(ch===',' && !quoted){
+     out.push(cur);cur='';
+   }else{
+     cur+=ch;
+   }
+ }
+ out.push(cur);
+ return out;
+}
+function decodeCsvBuffer(buf){
+ // This console export is normally CP932/Shift-JIS.
+ try{return new TextDecoder('shift-jis').decode(buf)}
+ catch(e){return new TextDecoder('utf-8').decode(buf)}
+}
+function isTargetCsvDevice(id){
+ return id==='割UD' || id==='暗転幕' || id==='UHL' ||
+        /^LB[1-3]$/.test(id) || /^B(?:[1-9]|1\d|2[0-7])$/.test(id);
+}
+function normalizeCsvNumber(v){
+ if(v==null)return null;
+ const s=String(v).trim().replace(/,/g,'');
+ if(s==='')return null;
+ const n=Number(s);
+ return Number.isFinite(n)?n:null;
+}
+function deviceFromCsvRow(cols,oldDevice){
+ const id=(cols[0]||'').trim();
+ const itemName=(cols[1]||'').trim();
+ const height=normalizeCsvNumber(cols[3]) ?? 0;
+ const labels=[];
+ for(let i=0;i<10;i++){
+   const name=(cols[8+i*2]||'').trim();
+   const pos=normalizeCsvNumber(cols[9+i*2]);
+   if(name!=='' && pos!==null)labels.push({name,pos});
+ }
+ const dtype=id==='割UD'?'curtain':((id==='UHL'||/^LB[1-3]$/.test(id))?'constant':'baton');
+ const d=oldDevice?deep(oldDevice):{
+   id,sourceId:id,itemName:'',toolHeight:0,userMin:300,userMax:20300,
+   machineMin:300,machineMax:20300,labels:[],defaultSpeed:1000,
+   type:dtype,hangOffset:0,defaultAcc:2,defaultDec:2
+ };
+ d.id=id;d.sourceId=id;d.type=dtype;
+ d.itemName=itemName;
+ d.toolHeight=(dtype==='curtain'?10000:height);
+ if(!d.displayColor){
+   const n=itemName;
+   d.displayColor=dtype==='curtain'?'#b51f2e':
+     (/袖幕|引割|暗転幕|文字幕|ホリゾント|幕/.test(n)?'#40454a':
+     (/スクリーン|LED/.test(n)?'#d9d9d9':'#7b8790'));
+ }
+ if(d.displayOpacity==null){
+   d.displayOpacity=/袖幕/.test(itemName)?0.45:(/幕|文字幕/.test(itemName)?0.72:1);
+ }
+ d.labels=labels;
+ if(!oldDevice || !Number.isFinite(+oldDevice.initialPosition))d.initialPosition=+d.machineMax;
+ // Do not import speed/acceleration/deceleration from CSV.
+ if(dtype==='curtain'){
+   d.machineMin=0;d.machineMax=10100;d.machineMin=0;d.machineMax=10100;
+ }
+ if(dtype==='constant'){
+   d.defaultSpeed=167;d.defaultAcc=0;d.defaultDec=0;
+ }else{
+   d.defaultSpeed=d.defaultSpeed||1000;
+   d.defaultAcc=Number.isFinite(+d.defaultAcc)?+d.defaultAcc:2;
+   d.defaultDec=Number.isFinite(+d.defaultDec)?+d.defaultDec:2;
+ }
+ return d;
+}
+function importInitialSetupCsv(textCsv){
+ const lines=textCsv.replace(/\r\n?/g,'\n').split('\n').filter(x=>x.trim()!=='');
+ const parsed=lines.map(parseCsvLine);
+ const rows=parsed.filter(r=>isTargetCsvDevice((r[0]||'').trim()));
+ if(!rows.length){
+   alert('対象装置（割UD、暗転幕、LB1〜3、UHL、B1〜B27）が見つかりませんでした。');
+   return;
+ }
+ const oldMap=new Map(devices.map(d=>[d.id,d]));
+ const imported=new Map();
+ for(const row of rows){
+   const id=(row[0]||'').trim();
+   imported.set(id,deviceFromCsvRow(row,oldMap.get(id)));
+ }
+ // Preserve the theater's fixed display order; only setup fields come from the CSV.
+ devices=BASE_DEVICES.map(base=>{
+   const d=imported.get(base.id);
+   if(d)return d;
+   const old=oldMap.get(base.id);
+   return old?deep(old):deep(base);
+ });
+ selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+ save();
+ renderDeviceList();renderSettings();renderInitialBulk();renderCueEditor();renderStage(0);
+ const itemCount=[...imported.values()].filter(d=>(d.itemName||'').trim()!=='').length;
+ const labelCount=[...imported.values()].reduce((n,d)=>n+d.labels.length,0);
+ const notice=document.getElementById('csvStateNotice');
+ if(notice)notice.textContent=`CSV読込済み：${imported.size}機構 / 吊物名 ${itemCount}件 / ラベル ${labelCount}件`;
+ alert(`CSVから初期設定を作成しました。\n対象機構: ${imported.size}件\n吊物名あり: ${itemCount}件\nラベル: ${labelCount}件\n\n速度・加速・減速の列は読み込んでいません。`);
+}
+
+function csvCell(v){
+ if(v===null || v===undefined)return '';
+ const s=String(v);
+ return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+}
+function csvNumber(v,maxDecimals=6){
+ if(v===null || v===undefined || v==='')return '';
+ const n=Number(v);
+ if(!Number.isFinite(n))return '';
+ if(Math.abs(n-Math.round(n))<1e-9)return String(Math.round(n));
+ return n.toFixed(maxDecimals).replace(/0+$/,'').replace(/\.$/,'');
+}
+function csvPositionLabel(d,pos){
+ const label=currentLabelName(d,pos);
+ return label==='—'?'直入力':label;
+}
+function csvTargetLabel(d,r){
+ inferRunTargetMode(r);
+ if(r.targetMode && r.targetMode!=='direct'){
+   const l=d?.labels?.find(x=>x.name===r.targetMode);
+   if(l)return r.targetMode;
+ }
+ return '直入力';
+}
+function exportDeviceSetupCsv(){
+ // 記録用タッパ表へコピペしやすい形式。
+ // 舞台奥 → 舞台前の順。荷重はアプリで管理していないため空欄。
+ const ordered=[...devices].reverse();
+
+ // 同時に存在するラベル同士は同じ列ペアに入れられない。
+ // ラベル名をノード、同一バトン内で共存するラベルを衝突関係として、
+ // 少ない列数で「同名ラベルは全バトンで同じ列」に揃える。
+ const names=[];
+ const seen=new Set();
+ const conflicts=new Map();
+ const firstOrder=new Map();
+
+ const addName=name=>{
+   if(!seen.has(name)){
+     seen.add(name);
+     firstOrder.set(name,names.length);
+     names.push(name);
+     conflicts.set(name,new Set());
+   }
+ };
+
+ ordered.forEach(d=>{
+   const rowNames=[];
+   const rowSeen=new Set();
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(!name)return;
+     addName(name);
+     if(!rowSeen.has(name)){rowSeen.add(name);rowNames.push(name);}
+   });
+   for(let i=0;i<rowNames.length;i++){
+     for(let j=i+1;j<rowNames.length;j++){
+       conflicts.get(rowNames[i]).add(rowNames[j]);
+       conflicts.get(rowNames[j]).add(rowNames[i]);
+     }
+   }
+ });
+
+ const slotOf=new Map();
+
+ // よく使うラベルは、記録表で見やすい位置を優先。
+ // 例：トビ = 1組目、カザリ = 2組目。
+ const seedSlot=(name,slot)=>{
+   if(!seen.has(name))return;
+   const occupied=[...slotOf.entries()].some(([other,s])=>
+     s===slot && conflicts.get(name)?.has(other)
+   );
+   if(!occupied)slotOf.set(name,slot);
+ };
+ seedSlot('トビ',0);
+ seedSlot('カザリ',1);
+
+ // 衝突の多いラベルから割り当てる簡易グラフ彩色。
+ const remaining=names
+   .filter(n=>!slotOf.has(n))
+   .sort((a,b)=>
+     (conflicts.get(b)?.size||0)-(conflicts.get(a)?.size||0) ||
+     (firstOrder.get(a)||0)-(firstOrder.get(b)||0)
+   );
+
+ remaining.forEach(name=>{
+   const used=new Set(
+     [...(conflicts.get(name)||[])]
+       .map(n=>slotOf.get(n))
+       .filter(v=>Number.isInteger(v))
+   );
+   let slot=0;
+   while(used.has(slot))slot++;
+   slotOf.set(name,slot);
+ });
+
+ let slotCount=0;
+ slotOf.forEach(slot=>{slotCount=Math.max(slotCount,slot+1)});
+
+ // 同一バトン内に「同名ラベル」が複数ある特殊ケース用に、
+ // 必要なときだけ追加の列ペアを末尾に確保する。
+ let duplicateExtra=0;
+ ordered.forEach(d=>{
+   const counts=new Map();
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(name)counts.set(name,(counts.get(name)||0)+1);
+   });
+   counts.forEach(count=>duplicateExtra=Math.max(duplicateExtra,Math.max(0,count-1)));
+ });
+ const totalSlots=slotCount+duplicateExtra;
+
+ const header=['バトン','吊り物名称','荷重'];
+ for(let i=0;i<totalSlots;i++){
+   header.push(`ラベル${i+1}`,`位置${i+1}(mm)`);
+ }
+ const rows=[header];
+
+ ordered.forEach(d=>{
+   const row=new Array(3+totalSlots*2).fill('');
+   row[0]=d.id;
+   row[1]=d.itemName||'';
+   // row[2] 荷重は空欄
+
+   const usedSlots=new Set();
+   const duplicateCounts=new Map();
+
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(!name || l.pos==='' || l.pos===null || l.pos===undefined)return;
+
+     const dup=duplicateCounts.get(name)||0;
+     duplicateCounts.set(name,dup+1);
+
+     let slot;
+     if(dup===0){
+       slot=slotOf.get(name);
+     }else{
+       // 同名2個目以降は末尾の追加枠へ。
+       slot=slotCount+(dup-1);
+       while(usedSlots.has(slot))slot++;
+     }
+     if(!Number.isInteger(slot))return;
+
+     usedSlots.add(slot);
+     row[3+slot*2]=name;
+     row[4+slot*2]=csvNumber(+l.pos);
+   });
+
+   rows.push(row);
+ });
+
+ const csv=rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`stage_tappa_${date}_${time}.csv`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+
+function exportCueSheetCsv(){
+ // 並びはユーザー提供キューシートを基準。Timeは本番進行時刻なので出力しない。
+ const header=[
+   'CUE','バトン/吊り物','現在','現在(ｍｍ)','方向','目標','目標(mm)',
+   '距離','動作時間','速度','％','加速','減速','ﾃﾞｨﾚｲ',
+   '2位置','2速度','2加減'
+ ];
+ const rows=[header];
+
+ cues.forEach((q,qi)=>{
+   if(isMemoEntry(q)){
+     const row=new Array(header.length).fill('');
+     row[1]=q.text||'';
+     rows.push(row);
+     return;
+   }
+
+   const starts=positionBeforeCue(qi);
+   const runs=q.runs||[];
+
+   // 運転行がないQもCUE番号だけは残す。
+   if(!runs.length){
+     const row=new Array(header.length).fill('');
+     row[0]=formatCueNumber(q.number)||'000.00';
+     rows.push(row);
+     return;
+   }
+
+   runs.forEach((r,ri)=>{
+     const d=dev(r.device);
+     if(!d)return;
+
+     syncRunTargetFromLabel(r);
+     const start=starts[r.device]??initialPosition(d);
+     const target=+r.target;
+     const distance=Math.abs(target-start);
+     const validation=validateRun(r,start);
+
+     const fixed=d.type==='constant';
+     const speed=fixed?167:(+r.speed||0);
+     const acc=fixed?0:(+r.acc||0);
+     const dec=fixed?0:(+r.dec||0);
+     const direction=target>start?'▲':target<start?'▼':'';
+
+     const row=[
+       ri===0?(formatCueNumber(q.number)||'000.00'):'',
+       `${r.device}${d.itemName?' '+d.itemName:''}`,
+       csvPositionLabel(d,start),
+       csvNumber(start),
+       direction,
+       csvTargetLabel(d,r),
+       csvNumber(target),
+       csvNumber(distance),
+       validation.ok?csvNumber(validation.total,1):'',
+       csvNumber(speed),
+       csvNumber(speed/1500,6),
+       csvNumber(acc,1),
+       csvNumber(dec,1),
+       (+r.delay||0)>0?csvNumber(+r.delay,1):'',
+       r.use2?csvNumber(+r.pos2):'',
+       r.use2?csvNumber(+r.speed2):'',
+       r.use2?csvNumber(transitionDisplayTime(speed,+r.speed2||0),1):''
+     ];
+     rows.push(row);
+   });
+ });
+
+ const csv=rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`stage_cue_sheet_${date}_${time}.csv`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+
+function exportProjectJson(){
+ const payload={
+   app:"stage-cue-simulator",
+   formatVersion:1,
+   savedAt:new Date().toISOString(),
+   devices:deep(devices),
+   cues:deep(cues)
+ };
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`stage_sim_${date}_${time}.json`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+function importProjectJson(obj){
+ if(!obj || !Array.isArray(obj.devices) || !Array.isArray(obj.cues)){
+   alert('このJSONは読み込めません。devices / cues が見つかりません。');
+   return;
+ }
+ devices=deep(obj.devices);
+ cues=deep(obj.cues);normalizeCueEntries();
+ if(!cues.length)cues=[{number:"001.00",name:"新規キュー",runs:[]}];
+ selectedCue=0;selectedListIndex=0;
+ selectedDevice=devices.find(d=>d.id==='B1')?'B1':(devices[0]?.id||'');
+ save();
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ selectCue(0);
+ alert('JSONを読み込みました。');
+}
+function dev(id){return devices.find(d=>d.id===id)}
+function labelPos(d,name){const l=d.labels.find(x=>x.name===name);return l?+l.pos:null}
+function currentLabelName(d,pos){
+ if(!d||!Array.isArray(d.labels))return '—';
+ const l=d.labels.find(x=>Math.abs((+x.pos)-(+pos))<=1);
+ return l?.name||'—';
+}
+function positionDisplayText(d,pos){
+ const mm=Math.round(+pos||0);
+ if(positionDisplayMode==='mm')return `${mm} mm`;
+ const label=currentLabelName(d,pos);
+ return label==='—'?`${mm} mm`:label;
+}
+function initialPosition(d){
+ if(Number.isFinite(+d.initialPosition)) return +d.initialPosition;
+ return +d.machineMax;
+}
+function buildInitial(){const o={};devices.forEach(d=>o[d.id]=initialPosition(d));return o}
+function positionBeforeCue(index){
+ const pos=buildInitial();
+ for(let i=0;i<index;i++) for(const r of cues[i].runs||[]){syncRunTargetFromLabel(r);pos[r.device]=+r.target;}
+ return pos;
+}
+const MAX_SPEED=1500;
+const MAX_ACCEL=750;
+
+function floorTenthSafe(n){return Math.floor((n+1e-9)*10)/10}
+function machineBaseTime(distance,speed){return Math.floor((distance/speed)*10+1e-9)/10}
+function transitionDisplayTime(v1,v2){return Math.floor((Math.abs(v1-v2)/1000)*10+1e-9)/10}
+function minRampTime(speed){return Math.ceil((speed/MAX_ACCEL)*10-1e-9)/10}
+function between(p,a,b){return p>=Math.min(a,b)&&p<=Math.max(a,b)}
+
+function validateRun(r,start){
+ const d=dev(r.device);
+ if(!d)return {ok:false,msg:'機器を確認してください'};
+ syncRunTargetFromLabel(r);
+ const end=+r.target;
+ if(!Number.isFinite(start)||!Number.isFinite(end))return {ok:false,msg:'現在地・目的地を確認してください'};
+ if(start===end)return {ok:false,msg:'現在地と目的地が同じです'};
+
+ const D=Math.abs(end-start);
+ if(D<=0)return {ok:false,msg:'移動距離は0より大きくしてください'};
+ if(D>20000 && d.type!=='curtain')return {ok:false,msg:'移動距離が実機範囲（最大20000 mm）を超えています'};
+
+ const lo=+d.machineMin,hi=+d.machineMax;
+ if(Number.isFinite(lo)&&Number.isFinite(hi)&&(start<lo||start>hi||end<lo||end>hi)){
+   return {ok:false,msg:`位置が装置限界（${Math.round(lo)}〜${Math.round(hi)} mm）外です`};
+ }
+
+ // LB / UHL: 167 mm/s fixed, no acceleration/deceleration.
+ if(d.type==='constant'){
+   return {ok:true,total:machineBaseTime(D,167),tTrans:0,D};
+ }
+
+ const v1=+r.speed,acc=+r.acc,dec=+r.dec;
+ if(![v1,acc,dec].every(Number.isFinite))return {ok:false,msg:'数値を確認してください'};
+ if(v1<=0||v1>MAX_SPEED)return {ok:false,msg:'基本速度が実機範囲（1〜1500 mm/s）外です'};
+ if(acc<0||dec<0)return {ok:false,msg:'加減速時間は0以上にしてください'};
+
+ const minRamp=minRampTime(v1);
+ if(acc+1e-9<minRamp)return {ok:false,msg:`基本速度 ${Math.round(v1)} mm/s には加速 ${minRamp.toFixed(1)} 秒以上が必要です`};
+ if(dec+1e-9<minRamp)return {ok:false,msg:`基本速度 ${Math.round(v1)} mm/s には減速 ${minRamp.toFixed(1)} 秒以上が必要です`};
+
+ if(!r.use2){
+   const dAcc=v1*acc/2,dDec=v1*dec/2;
+   if(D+1e-9<dAcc+dDec){
+     const minRequired=v1*minRamp;
+     if(D+1e-9>=minRequired){
+       const equalRampLimit=floorTenthSafe(D/v1);
+       return {ok:false,msg:`移動距離が不足しています。現在の設定では最低 ${(dAcc+dDec).toFixed(1)} mm 必要です。加速・減速を同じ値にするなら、各 ${equalRampLimit.toFixed(1)} 秒以下にすると成立します（実機最低は各 ${minRamp.toFixed(1)} 秒）`};
+     }
+     return {ok:false,msg:`移動距離が不足しています。加速・減速を実機最低の各 ${minRamp.toFixed(1)} 秒にしても最低 ${minRequired.toFixed(1)} mm 必要です。加減速調整だけでは解消できないため、速度を下げるか距離を延ばしてください`};
+   }
+   const total=machineBaseTime(D,v1)+(acc+dec)/2;
+   return {ok:true,total,tTrans:0,D};
+ }
+
+ const p2=+r.pos2,v2=+r.speed2;
+ if(!Number.isFinite(p2)||!Number.isFinite(v2))return {ok:false,msg:'2位置・2速度を確認してください'};
+ if(!between(p2,start,end)||p2===start||p2===end)return {ok:false,msg:'2位置が現在地と目的地の間にありません'};
+ if(v2<=0||v2>MAX_SPEED)return {ok:false,msg:'2速度が実機範囲（1〜1500 mm/s）外です'};
+
+ const minDecV2=minRampTime(v2);
+ if(dec+1e-9<minDecV2)return {ok:false,msg:`2速度 ${Math.round(v2)} mm/s からの減速には ${minDecV2.toFixed(1)} 秒以上が必要です`};
+
+ const D1=Math.abs(p2-start),D2=D-D1;
+ const dAcc=v1*acc/2;
+ const tBase=(D1-dAcc)/v1;
+ if(tBase<0)return {ok:false,msg:'2位置までに始動加速を完了できません'};
+
+ const tTrans=transitionDisplayTime(v1,v2);
+ const dTrans=((v1+v2)/2)*tTrans;
+ const dDec=v2*dec/2;
+ const tV2=(D2-dTrans-dDec)/v2;
+ if(tV2<0)return {ok:false,msg:'2位置から目的地までの距離が不足しています'};
+
+ const tP2=acc+tBase;
+ const total=tP2+tTrans+tV2+dec;
+ return {ok:true,total,tTrans,D,D1,D2,tBase,tP2,tV2,dAcc,dTrans,dDec};
+}
+
+function cueValidation(index){
+ const starts=positionBeforeCue(index),errors=[];
+ (cues[index]?.runs||[]).forEach((r,i)=>{
+   const v=validateRun(r,starts[r.device]);
+   if(!v.ok)errors.push({index:i,device:r.device,msg:v.msg});
+ });
+ return errors;
+}
+
+function cueDuration(cue,index){
+ const starts=positionBeforeCue(index);let mx=0;
+ for(const r of cue.runs||[]){
+   const v=validateRun(r,starts[r.device]);
+   if(v.ok)mx=Math.max(mx,v.total+(+r.delay||0));
+ }
+ return Math.max(mx,0.1);
+}
+
+function motionPos(start,end,speed,acc,dec,t){
+ const sign=end>=start?1:-1,D=Math.abs(end-start);
+ if(D===0)return end;
+ speed=Math.max(1,speed);acc=Math.max(0,acc);dec=Math.max(0,dec);
+ const dA=speed*acc/2,dD=speed*dec/2,dC=Math.max(0,D-dA-dD);
+ const tC=dC/speed,total=acc+tC+dec;
+ if(t<=0)return start;if(t>=total)return end;
+ let x=0;
+ if(acc>0&&t<acc)x=.5*(speed/acc)*t*t;
+ else if(t<acc+tC)x=dA+speed*(t-acc);
+ else{const u=t-acc-tC;x=dA+dC+speed*u-.5*(dec>0?speed/dec:0)*u*u}
+ return start+sign*x;
+}
+
+function runPositionAt(r,start,t){
+ const d=dev(r.device);if(!d)return start;
+ const delay=+r.delay||0;if(t<=delay)return start;
+ const lt=t-delay,end=+r.target;
+ const vr=validateRun(r,start);
+ if(!vr.ok)return start;
+
+ if(d.type==='constant'){
+   const physical=Math.abs(end-start)/167;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   return motionPos(start,end,167,0,0,scaled);
+ }
+
+ const v1=+r.speed,acc=+r.acc,dec=+r.dec;
+ if(!r.use2){
+   // Display time follows the machine's 0.1 s truncation.
+   // Position remains a continuous acceleration/constant/deceleration model,
+   // scaled so it reaches the destination at the displayed completion time.
+   const physical=Math.abs(end-start)/v1+(acc+dec)/2;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   return motionPos(start,end,v1,acc,dec,scaled);
+ }
+
+ const p2=+r.pos2,v2=+r.speed2,tTrans=vr.tTrans;
+ const sign=end>=start?1:-1;
+ const tP2=vr.tP2;
+
+ if(lt<=acc){
+   return start+sign*(acc>0?.5*(v1/acc)*lt*lt:0);
+ }
+ if(lt<=tP2){
+   return start+sign*(vr.dAcc+v1*(lt-acc));
+ }
+ if(lt<=tP2+tTrans){
+   if(tTrans<=0)return p2;
+   const u=lt-tP2,a2=(v2-v1)/tTrans;
+   return p2+sign*(v1*u+.5*a2*u*u);
+ }
+ if(lt<=tP2+tTrans+vr.tV2){
+   return p2+sign*(vr.dTrans+v2*(lt-tP2-tTrans));
+ }
+ const u=lt-(tP2+tTrans+vr.tV2);
+ if(u>=dec)return end;
+ const beforeDec=p2+sign*(vr.dTrans+v2*vr.tV2);
+ return beforeDec+sign*(v2*u-.5*(dec>0?v2/dec:0)*u*u);
+}
+
+function hangingBottomMM(d,batonPos){
+ if(!d)return null;
+ if(d.type==='curtain')return +batonPos;
+ const h=+d.toolHeight||0;
+ if(h<=0)return null;
+ return (+batonPos)-(+d.hangOffset||0)-h;
+}
+
+function runLiveState(r,start,t){
+ const d=dev(r.device);
+ if(!d)return {label:'—',cls:'wait',second:false};
+ const delay=+r.delay||0;
+ if(t<=0)return {label:'スタンバイ',cls:'wait',second:false};
+ if(t<delay)return {label:'ディレイ',cls:'wait',second:false};
+ const vr=validateRun(r,start);
+ if(!vr.ok)return {label:'ERR',cls:'wait',second:false};
+ const lt=Math.max(0,t-delay);
+ if(lt>=vr.total)return {label:'完了',cls:'done',second:false};
+
+ if(d.type==='constant')return {label:'定速',cls:'run',second:false};
+
+ if(!r.use2){
+   const end=+r.target,v=+r.speed||1,acc=+r.acc||0,dec=+r.dec||0;
+   const D=Math.abs(end-start);
+   const dA=v*acc/2,dD=v*dec/2,dC=Math.max(0,D-dA-dD);
+   const tC=dC/v;
+   const physical=D/v+(acc+dec)/2;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   if(acc>0 && scaled<acc)return {label:'加速中',cls:'run',second:false};
+   if(dec>0 && scaled>=acc+tC)return {label:'減速中',cls:'run',second:false};
+   return {label:'定速',cls:'run',second:false};
+ }
+
+ const acc=+r.acc||0;
+ const tP2=vr.tP2;
+ const tTrans=vr.tTrans;
+ if(lt<=acc)return {label:'加速中',cls:'run',second:false};
+ if(lt<tP2)return {label:'1速度',cls:'run',second:false};
+ if(lt<tP2+tTrans)return {label:'2速度切替',cls:'switch',second:true};
+ if(lt<tP2+tTrans+vr.tV2)return {label:'2速度',cls:'second',second:true};
+ return {label:'減速中',cls:'second',second:true};
+}
+
+function updateMonitorRunLive(t=0){
+ const box=document.getElementById('monitorCueBrowser');
+ if(!box)return;
+ const q=cues[selectedCue];
+ if(!q)return;
+ const starts=positionBeforeCue(selectedCue);
+ (q.runs||[]).forEach((r,ri)=>{
+   const st=starts[r.device]??initialPosition(dev(r.device));
+   const pos=runPositionAt(r,st,t);
+   const state=runLiveState(r,st,t);
+   const posEl=box.querySelector(`[data-live-pos="${ri}"]`);
+   const clearEl=box.querySelector(`[data-live-clear="${ri}"]`);
+   const stateEl=box.querySelector(`[data-live-state="${ri}"]`);
+   if(posEl){
+     posEl.textContent=`${Math.round(pos)} mm`;
+     posEl.classList.toggle('second',state.second);
+   }
+   if(clearEl){
+     const clearance=hangingBottomMM(dev(r.device),pos);
+     clearEl.textContent=clearance==null?'—':`${Math.round(clearance)} mm`;
+   }
+   if(stateEl){
+     stateEl.textContent=state.label;
+     stateEl.className=`mon-state ${state.cls}`;
+   }
+ });
+}
+
+function positionsAt(index,t){
+ const starts=positionBeforeCue(index),p={...starts},cue=cues[index];
+ for(const r of cue.runs||[])p[r.device]=runPositionAt(r,starts[r.device],t);
+ return p;
+}
+function stageLayout(width){
+ // 実図面ベースの前後寸法（右＝舞台前、左＝舞台奥）
+ // 通常バトン間 300mm
+ // 割UD－暗転幕 350mm
+ // LB奥行850mm、LB箱端－前後バトン各350mm → バトン中心－LB中心 775mm
+ // UHL－B24 600mm
+ const gapMM=(a,b)=>{
+   if(a==='割UD' && b==='暗転幕') return 350;
+   if(/^LB\d+$/.test(a) || /^LB\d+$/.test(b)) return 775;
+   if(a==='UHL' && b==='B24') return 600;
+   return 300;
+ };
+ const physical={};
+ let mm=0;
+ physical[devices[0].id]=0;
+ for(let i=1;i<devices.length;i++){
+   mm+=gapMM(devices[i-1].id,devices[i].id);
+   physical[devices[i].id]=mm;
+ }
+ const total=Math.max(1,mm);
+ const usable=width*0.78;
+ const pxPerMM=usable/total;
+ const left=(width-usable)/2;
+ const xMap={};
+ devices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
+ return {xMap,pxPerMM,totalMM:total};
+}
+function mmToY(mm,h){const top=84,bottom=52,max=21550;return top+(max-mm)/max*(h-top-bottom)}
+function renderStage(t=0){
+ const c=document.getElementById('stageCanvas'),w=c.clientWidth,h=c.clientHeight;
+ if(!w||!h)return;
+ const p=positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
+ for(const r of [{label:'',v:21550,cls:''},{label:'',v:8820,cls:'fly'},{label:'',v:0,cls:''}]){
+  const y=mmToY(r.v,h),line=document.createElement('div');line.className='ref-line '+r.cls;line.style.top=y+'px';c.appendChild(line);
+  if(r.label){const lab=document.createElement('div');lab.className='ref-label';lab.style.top=y+'px';lab.textContent=r.label;c.appendChild(lab);}
+ }
+ const {xMap,pxPerMM}=stageLayout(w);
+
+ // プロセライン（8130mm）。黒・少し太めで、割UDの少し手前まで引く。
+ const procY=mmToY(8130,h);
+ const proc=document.createElement('div');
+ proc.className='ref-line prosc';
+ proc.style.top=procY+'px';
+ const curtainX=xMap['割UD']||w*0.9;
+ proc.style.left=Math.min(w*0.94,curtainX+22)+'px';
+ proc.style.right='3%';
+ c.appendChild(proc);
+ devices.forEach((d,i)=>{
+  const x=xMap[d.id];
+  const active=(cues[selectedCue].runs||[]).some(r=>r.device===d.id);
+  const dl=document.createElement('div');dl.className='dev-label';dl.style.left=x+'px';dl.textContent=d.id;c.appendChild(dl);
+  const pos=p[d.id]??initialPosition(d),y=mmToY(pos,h);
+
+  // すのこ側からバトンまでの昇降ワイヤー
+  const wireTop=mmToY(21550,h);
+  const lift=document.createElement('div');
+  lift.className='lift-wire';
+  lift.style.left=x+'px';
+  lift.style.top=Math.min(wireTop,y)+'px';
+  lift.style.height=Math.max(1,Math.abs(y-wireTop))+'px';
+  c.appendChild(lift);
+
+  const dot=document.createElement('div');dot.className='baton-dot';dot.style.left=x+'px';dot.style.top=y+'px';c.appendChild(dot);
+
+  // LBは「バトン上に載る躯体」を描きつつ、そのバトンから下に通常の吊り物も吊れる
+  const isLB=/^LB\d+$/.test(d.id);
+  if(isLB){
+    const topMM=pos+3700,bottomMM=pos;
+    const y1=mmToY(topMM,h),y2=mmToY(bottomMM,h),bridge=document.createElement('div');
+    bridge.className='item lb';
+    bridge.style.setProperty('--item-color',d.displayColor||'#cfd4d8');
+    bridge.style.opacity='1';
+    if(active)bridge.classList.add('active');
+    bridge.style.left=x+'px';
+    bridge.style.top=Math.min(y1,y2)+'px';
+    bridge.style.height=Math.max(8,Math.abs(y2-y1))+'px';
+    bridge.style.width=(850*pxPerMM)+'px';
+    bridge.style.minWidth=(850*pxPerMM)+'px';
+    bridge.title=`${d.id} ライトブリッジ\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos)}`;
+    c.appendChild(bridge);
+  }
+
+  let topMM,bottomMM;const hang=+d.hangOffset||0;
+  if(d.type==='curtain'){bottomMM=pos;topMM=pos+10000}
+  else{topMM=pos-hang;bottomMM=topMM-(+d.toolHeight||0)}
+
+  // バトンから道具上端までの桁吊り
+  if(d.type!=='curtain' && hang>0){
+    const itemTopY=mmToY(topMM,h);
+    const hw=document.createElement('div');
+    hw.className='hang-wire '+(active?'active':'');
+    hw.style.left=x+'px';
+    hw.style.top=Math.min(y,itemTopY)+'px';
+    hw.style.height=Math.max(1,Math.abs(itemTopY-y))+'px';
+    c.appendChild(hw);
+  }
+
+  if((+d.toolHeight||0)>0 || d.type==='curtain'){
+    const y1=mmToY(topMM,h),y2=mmToY(bottomMM,h),item=document.createElement('div');
+    item.className='item '+(d.type==='curtain'?'curtain':'hasname');
+    item.style.setProperty('--item-color',d.displayColor||'#777');
+    item.style.opacity=String(d.displayOpacity==null?1:d.displayOpacity);
+    if(active)item.classList.add('active');
+    item.style.left=x+'px';item.style.top=Math.min(y1,y2)+'px';item.style.height=Math.max(3,Math.abs(y2-y1))+'px';
+    const clearance=hangingBottomMM(d,pos);
+    item.title=`${d.id} ${d.itemName||'吊り物'}\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos)}\n床まで ${clearance==null?'—':Math.round(clearance)+' mm'}`;c.appendChild(item);
+  }
+ });
+ updateMonitorRunLive(t);
+ renderStatus();
+}
+function renderStatus(){}
+function updateMonitorValidation(){
+ const errors=cueValidation(selectedCue);
+ if(!errors.length){monitorValidation.textContent='';return true;}
+ monitorValidation.textContent='⚠ '+errors.map(e=>`${e.device}: ${e.msg}`).join(' / ');
+ return false;
+}
+function selectCue(i){
+ const playable=closestPlayableIndex(Math.max(0,Math.min(cues.length-1,i)));
+ if(playable<0)return;
+ selectedCue=playable;selectedListIndex=playable;running=false;
+ const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+ nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;seek.max=dur.toFixed(2);seek.value=0;monitorClock.textContent='0.0 s';
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();renderStage(0);updateMonitorValidation();
+}
+function selectListItem(i){
+ selectedListIndex=Math.max(0,Math.min(cues.length-1,i));
+ running=false;cancelAnimationFrame(raf);
+ if(!isMemoEntry(cues[selectedListIndex]))selectedCue=selectedListIndex;
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ if(!isMemoEntry(cues[selectedListIndex])){
+   const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+   nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;
+   seek.max=dur.toFixed(2);seek.value=0;monitorClock.textContent='0.0 s';
+   renderStage(0);updateMonitorValidation();
+ }
+}
+function animationLoop(ts){
+ if(!running)return;
+ const elapsed=(ts-startStamp)/1000,dur=cueDuration(cues[selectedCue],selectedCue),t=Math.min(elapsed,dur);
+ seek.value=t;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t);
+ if(t>=dur){
+   running=false;
+   const next=nextPlayableIndex(selectedCue);if(next>=0){setTimeout(()=>selectCue(next),120);}
+   return;
+ }
+ raf=requestAnimationFrame(animationLoop);
+}
+goBtn.onclick=()=>{if(!updateMonitorValidation())return;const t=+seek.value||0;startStamp=performance.now()-t*1000;running=true;raf=requestAnimationFrame(animationLoop)};
+pauseBtn.onclick=()=>{running=false;cancelAnimationFrame(raf)};
+stopBtn.onclick=()=>{running=false;cancelAnimationFrame(raf);seek.value=0;monitorClock.textContent='0.0 s';renderStage(0)};
+function setPositionDisplayMode(mode){
+ positionDisplayMode=mode==='mm'?'mm':'label';
+ const b=document.getElementById('posModeToggle');
+ if(b)b.textContent=positionDisplayMode==='label'?'ラベル':'mm';
+ renderMonitorCueBrowser();
+ renderCueEditor();
+}
+function togglePositionDisplayMode(){
+ setPositionDisplayMode(positionDisplayMode==='label'?'mm':'label');
+}
+posModeToggle.onclick=togglePositionDisplayMode;
+resetQ.onclick=()=>selectCue(selectedCue);prevQ.onclick=()=>{const i=prevPlayableIndex(selectedCue);if(i>=0)selectCue(i)};nextQ.onclick=()=>{const i=nextPlayableIndex(selectedCue);if(i>=0)selectCue(i)};
+seek.oninput=e=>{running=false;cancelAnimationFrame(raf);const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t)};
+
+
+function runSummary(r){
+ syncRunTargetFromLabel(r);const d=dev(r.device);
+ const target=positionDisplayText(d,+r.target);
+ return `${r.device} ${d?.itemName||''} → ${target}${r.use2?` / 2位置 ${Math.round(+r.pos2||0)} @${Math.round(+r.speed2||0)}`:''}`;
+}
+function renderMonitorCueBrowser(){
+ const box=document.getElementById('monitorCueBrowser');if(!box)return;
+ const starts=positionBeforeCue(selectedCue);
+ box.innerHTML=cues.map((q,i)=>{
+   if(isMemoEntry(q)){
+     const memoText=q.text||'メモ';
+     return `<div class="mon-q memo"><div class="mon-q-header" title="${memoText.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${memoText}</div></div>`;
+   }
+   const selected=i===selectedCue;
+   const summary=(q.runs||[]).map(runSummary).join(' ｜ ');
+   let detail='';
+   if(selected){
+     const hdr=['機器 / 吊物','開始','現在地','床まで','目標','運転状態','速度','加速','減速','遅延','2位置','2速度','2加減'];
+     const cells=hdr.map(x=>`<div class="mh">${x}</div>`).join('')+(q.runs||[]).map((r,ri)=>{
+       const d=dev(r.device);const st=starts[r.device]??initialPosition(d);
+       const t2=r.use2&&d?.type!=='constant'?transitionDisplayTime(+r.speed||0,+r.speed2||0):null;
+       const state=runLiveState(r,st,+seek.value||0);
+       const cur=runPositionAt(r,st,+seek.value||0);
+       const clearance=hangingBottomMM(d,cur);
+       return `<div>${r.device}｜${d?.itemName||'（吊物なし）'}</div><div>${positionDisplayText(d,st)}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${positionDisplayText(d,+r.target)}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${state.label}</div><div>${d?.type==='constant'?167:Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?0:(+r.acc||0)}</div><div>${d?.type==='constant'?0:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+     }).join('');
+     detail=`<div class="mon-run-grid">${cells}</div>`;
+   }
+   return `<div class="mon-q ${selected?'selected':''}" data-moncue="${i}"><div class="mon-q-header"><span class="mon-q-num">${formatCueNumber(q.number)||'000.00'}</span><span class="mon-q-name">${q.name}</span><span class="mon-q-summary">${summary}</span></div>${detail}</div>`;
+ }).join('');
+ box.querySelectorAll('[data-moncue]').forEach(el=>el.onclick=()=>selectCue(+el.dataset.moncue));
+ const sel=box.querySelector('.mon-q.selected');if(sel)sel.scrollIntoView({block:'nearest'});
+}
+function renderCueList(){
+ cueList.innerHTML='';
+ cues.forEach((q,i)=>{
+   const d=document.createElement('div');
+   d.className='cue-list-item '+(i===selectedListIndex?'selected ':'')+(isMemoEntry(q)?'memo ':(q.marker?'marker ':''));
+   d.textContent=isMemoEntry(q)?(q.text||'メモ'):(formatCueNumber(q.number)||'000.00')+' '+q.name;
+   d.draggable=true;d.dataset.i=i;d.onclick=()=>selectListItem(i);
+   d.ondragstart=e=>e.dataTransfer.setData('text/plain',String(i));
+   d.ondragover=e=>e.preventDefault();
+   d.ondrop=e=>{
+     e.preventDefault();
+     const from=+e.dataTransfer.getData('text/plain'),to=i;
+     if(!Number.isInteger(from)||from===to)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],selectedObj=cues[selectedListIndex];
+     const [m]=cues.splice(from,1);cues.splice(to,0,m);
+     selectedCue=Math.max(0,cues.indexOf(activeObj));
+     selectedListIndex=Math.max(0,cues.indexOf(selectedObj));
+     save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   cueList.appendChild(d);
+ });
+}
+function syncRunTargetFromLabel(r){
+ const d=dev(r.device);if(!d)return;
+ if(r.targetMode && r.targetMode!=='direct'){
+   const l=d.labels.find(x=>x.name===r.targetMode);
+   if(l)r.target=+l.pos; else r.targetMode='direct';
+ }
+}
+function inferRunTargetMode(r){
+ const d=dev(r.device);if(!d)return 'direct';
+ if(r.targetMode)return r.targetMode;
+ const l=d.labels.find(x=>Math.abs(+x.pos-(+r.target))<0.001);
+ r.targetMode=l?l.name:'direct';
+ return r.targetMode;
+}
+function targetOptions(d,r){
+ const mode=inferRunTargetMode(r);
+ return d.labels.map(l=>`<option value="${l.name}" ${mode===l.name?'selected':''}>${l.name}　${Math.round(l.pos)}mm</option>`).join('')+`<option value="direct" ${mode==='direct'?'selected':''}>直入力</option>`;
+}
+function renderCueEditor(){
+ const q=cues[selectedListIndex];
+ if(!q){cueEditor.innerHTML='';return;}
+ if(isMemoEntry(q)){
+   cueEditor.innerHTML=`<div class="memo-editor">
+     <h2>メモ</h2>
+     <textarea id="editMemoText" placeholder="例：機構チェック / 本番">${q.text||''}</textarea>
+     <div class="memo-actions">
+       <button id="moveMemoUp">上へ</button>
+       <button id="moveMemoDown">下へ</button>
+       <button id="deleteMemo" class="danger">メモ削除</button>
+     </div>
+     <div class="small-muted" style="margin-top:10px">メモはキューリストに表示されますが、GO・前Q・次Q・自動送りでは飛ばされます。</div>
+   </div>`;
+   editMemoText.oninput=e=>{pushUndoSnapshotForInput(`memo:${selectedListIndex}`);q.text=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+   moveMemoUp.onclick=()=>{
+     if(selectedListIndex<=0)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+     cues.splice(selectedListIndex-1,0,m);selectedListIndex--;
+     selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   moveMemoDown.onclick=()=>{
+     if(selectedListIndex>=cues.length-1)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+     cues.splice(selectedListIndex+1,0,m);selectedListIndex++;
+     selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   deleteMemo.onclick=()=>{
+     pushUndoSnapshot();
+     cues.splice(selectedListIndex,1);
+     selectedListIndex=Math.max(0,Math.min(selectedListIndex,cues.length-1));
+     selectedCue=closestPlayableIndex(selectedCue);
+     save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   return;
+ }
+ const starts=positionBeforeCue(selectedListIndex);
+ const rows=(q.runs||[]).map((r,ri)=>{
+   const d=dev(r.device)||devices[0],fixed=d.type==='constant';
+   const st=starts[r.device]??initialPosition(d);
+   const dist=Math.abs((+r.target)-st);
+   const validation=validateRun(r,st);
+   const time=validation.ok?validation.total+(+r.delay||0):NaN;
+   const trans2=r.use2&&!fixed?transitionDisplayTime(+r.speed||0,+r.speed2||0):0;
+   return `<tr class="${validation.ok?'':'invalid'}">
+    <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
+    <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${x.id}" ${x.id===r.device?'selected':''}>${x.id}｜${x.itemName||'（吊物なし）'}</option>`).join('')}</select></td>
+    <td class="readonly">${positionDisplayText(d,starts[r.device]??initialPosition(d))}</td>
+    <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
+    <td><input class="target" data-ri="${ri}" data-f="target" type="number" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
+    <td class="readonly">${Math.round(dist)}</td>
+    <td><input data-ri="${ri}" data-f="speed" type="number" value="${fixed?167:r.speed}" ${fixed?'disabled':''}></td>
+    <td class="readonly">${Number.isFinite(time)?time.toFixed(1):"ERR"}</td>
+    <td><input data-ri="${ri}" data-f="acc" type="number" step=".1" value="${fixed?0:r.acc}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="dec" type="number" step=".1" value="${fixed?0:r.dec}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="delay" type="number" step=".1" value="${r.delay||0}"></td>
+    <td><input data-ri="${ri}" data-f="use2" type="checkbox" ${r.use2?'checked':''} ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="pos2" type="number" value="${r.pos2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="speed2" type="number" value="${r.speed2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input class="readonly-derived" type="number" step=".1" value="${r.use2&&!fixed?trans2.toFixed(1):'0.0'}" readonly></td>
+    <td><button data-del="${ri}" style="width:100%">削除</button></td>
+   </tr>`;
+ }).join('');
+ cueEditor.innerHTML=`<div class="q-block"><div class="q-header"><input class="q-number" id="editQNum" inputmode="decimal" placeholder="000.00" value="${formatCueNumber(q.number)||'000.00'}"><input class="q-name" id="editQName" value="${q.name}"><div class="q-actions"><button id="previewQ">断面で確認</button></div></div>
+ <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
+ <div id="cueValidation" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${e.device}: ${e.msg}</div>`).join('')}</div>
+ <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${q.number}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
+ <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"><col style="width:55px"></colgroup>
+ <thead><tr><th>選択</th><th>機器 / 吊物</th><th>開始</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th>時間</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th><th></th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
+ editQNum.oninput=e=>{pushUndoSnapshotForInput(`qnum:${selectedListIndex}`);q.number=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+ editQNum.onblur=e=>{
+   const formatted=formatCueNumber(e.target.value);
+   if(!formatted){e.target.value=q.number||'000.00';return;}
+   q.number=formatted;e.target.value=formatted;scheduleSave();renderCueList();renderMonitorCueBrowser();
+ };
+ editQName.oninput=e=>{pushUndoSnapshotForInput(`qname:${selectedListIndex}`);q.name=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+ previewQ.onclick=()=>{document.querySelector('[data-tab="monitor"]').click();selectCue(selectedListIndex)};
+ moveCueUp.onclick=()=>{
+   if(selectedListIndex<=0)return;
+   pushUndoSnapshot();
+   const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+   cues.splice(selectedListIndex-1,0,m);selectedListIndex--;
+   selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ };
+ moveCueDown.onclick=()=>{
+   if(selectedListIndex>=cues.length-1)return;
+   pushUndoSnapshot();
+   const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+   cues.splice(selectedListIndex+1,0,m);selectedListIndex++;
+   selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ };
+ copyCue.onclick=()=>{cueClipboard=deep(q)};
+ duplicateQ.onclick=()=>{
+   pushUndoSnapshot();
+   const c=deep(q);c.number=nextQNumber(q.number);c.name+=' コピー';
+   cues.splice(selectedListIndex+1,0,c);save();selectCue(selectedListIndex+1);
+ };
+ deleteCue.onclick=()=>{
+   if(playableCueCount()<=1)return;
+   pushUndoSnapshot();
+   const wasActive=cues[selectedListIndex]===cues[selectedCue];
+   cues.splice(selectedListIndex,1);
+   selectedListIndex=Math.min(selectedListIndex,cues.length-1);
+   if(wasActive)selectedCue=closestPlayableIndex(selectedListIndex);
+   else selectedCue=cues.indexOf(cues[selectedCue])>=0?selectedCue:closestPlayableIndex(selectedListIndex);
+   save();
+   if(selectedCue>=0)selectCue(selectedCue);else{renderCueList();renderCueEditor();renderMonitorCueBrowser();}
+ };
+ copyRows.onclick=()=>{const idx=[...cueEditor.querySelectorAll('[data-rowcheck]:checked')].map(x=>+x.dataset.rowcheck);runClipboard=idx.map(i=>deep(q.runs[i]))};
+ pasteRows.onclick=()=>{if(!runClipboard.length)return;pushUndoSnapshot();q.runs.push(...deep(runClipboard));save();renderCueEditor()};
+ addRun.onclick=()=>{pushUndoSnapshot();const d=dev('B1')||devices[0];q.runs.push({device:d.id,targetMode:d.labels[0]?.name||'direct',target:d.labels[0]?.pos??d.machineMax,speed:1000,acc:2,dec:2,delay:0,use2:false,pos2:'',speed2:''});save();renderCueEditor()};
+ editPosModeToggle.onclick=togglePositionDisplayMode;
+ cueEditor.querySelectorAll('[data-ri][data-f]').forEach(el=>el.onchange=()=>{pushUndoSnapshot();const ri=+el.dataset.ri,f=el.dataset.f,r=q.runs[ri];if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?167:(r.speed||1000);r.acc=d.type==='constant'?0:(r.acc||2);r.dec=d.type==='constant'?0:(r.dec||2)}else if(f==='targetSelect'){r.targetMode=el.value;if(el.value!=='direct'){const d=dev(r.device),l=d.labels.find(x=>x.name===el.value);if(l)r.target=+l.pos}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation()});
+ cueEditor.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndoSnapshot();q.runs.splice(+b.dataset.del,1);save();renderCueEditor()});
+ renumberOpenBtn.onclick=()=>{renumberBox.style.display=renumberBox.style.display==='none'?'grid':'none'};
+ runRenumber.onclick=()=>{pushUndoSnapshot();let a=Math.max(1,+rnStartIndex.value||1)-1,b=Math.min(cues.length,+rnEndIndex.value||cues.length)-1;if(b<a)[a,b]=[b,a];const s=parseFloat(rnStartNumber.value)||0,step=parseFloat(rnStep.value)||1;let n=0;for(let i=a;i<=b;i++){if(isMemoEntry(cues[i]))continue;cues[i].number=(s+n*step).toFixed(2).padStart(6,'0');n++;}save();renderCueList();renderCueEditor();renderMonitorCueBrowser()};
+}
+function formatCueNumber(value){
+ const s=String(value??'').trim();
+ if(s==='')return null;
+ const n=Number(s);
+ if(!Number.isFinite(n) || n<0)return null;
+ return n.toFixed(2).padStart(6,'0');
+}
+function nextQNumber(s){const n=Math.round((parseFloat(s)||0)*100)+10;return formatCueNumber(n/100)||'000.10'}
+function nextWholeCueNumber(s){return formatCueNumber((parseFloat(s)||0)+1)||'001.00'}
+newCueBtn.onclick=()=>{pushUndoSnapshot();const last=lastPlayableNumber();cues.push({number:nextWholeCueNumber(last),name:'新規キュー',runs:[]});save();selectCue(cues.length-1)};
+newMemoBtn.onclick=()=>{
+ pushUndoSnapshot();
+ const at=Math.max(0,Math.min(cues.length,selectedListIndex+1));
+ cues.splice(at,0,{kind:'memo',text:'新規メモ'});
+ selectedListIndex=at;save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+};
+pasteCueBtn.onclick=()=>{if(!cueClipboard)return;pushUndoSnapshot();const c=deep(cueClipboard);c.number=nextQNumber(previousPlayableNumber(selectedListIndex));c.name+=' 貼付';const at=selectedListIndex+1;cues.splice(at,0,c);save();selectCue(at)};
+renumberOpenBtn.onclick=()=>{document.querySelector('[data-tab="cue"]').click();setTimeout(()=>{const b=document.getElementById('renumberBox');if(b)b.style.display='grid'},0)};
+
+function initialLabelOptions(d,current){
+ let html=d.labels.map(l=>`<option value="${l.pos}" ${Math.abs(+l.pos-(+current))<0.001?'selected':''}>${l.name}　${Math.round(l.pos)}mm</option>`).join('');
+ const matched=d.labels.some(l=>Math.abs(+l.pos-(+current))<0.001);
+ html+=`<option value="direct" ${matched?'':'selected'}>直接入力</option>`;
+ return html;
+}
+function renderInitialBulk(){
+ const body=document.getElementById('initialBulkBody');if(!body)return;
+ body.innerHTML='';
+ devices.forEach((d,i)=>{
+  const p=initialPosition(d);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="devcol">${d.id}</td><td class="itemcol">${d.itemName||'—'}</td>
+    <td class="labelcol"><select data-bulk-i="${i}" data-bulk-k="label">${initialLabelOptions(d,p)}</select></td>
+    <td class="mmcol"><input data-bulk-i="${i}" data-bulk-k="pos" type="number" value="${Math.round(p)}"></td>
+    <td class="rangecol">${Math.round(d.machineMin)} ～ ${Math.round(d.machineMax)} mm</td>`;
+  body.appendChild(tr);
+ });
+ body.querySelectorAll('select[data-bulk-k="label"]').forEach(sel=>sel.onchange=()=>{
+   if(sel.value==='direct')return;
+   const i=+sel.dataset.bulkI;
+   pushUndoSnapshot();
+   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+   input.value=Math.round(+sel.value);
+   syncInitialFromTable();
+ });
+ body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>input.addEventListener('input',()=>{
+   pushUndoSnapshotForInput(`initial:${input.dataset.bulkI}`);
+   syncInitialFromTable();
+ }));
+}
+function renderDeviceList(){
+ deviceList.innerHTML='';
+ devices.forEach(d=>{const b=document.createElement('button');b.className='device-btn '+(d.id===selectedDevice?'active':'');b.innerHTML=`<span>${d.id}</span><small>${d.itemName||''}</small>`;b.onclick=()=>{selectedDevice=d.id;renderDeviceList();renderSettings()};deviceList.appendChild(b)});
+}
+function hangingPackage(d){
+ return {
+   itemName:d.itemName||'',
+   toolHeight:+d.toolHeight||0,
+   hangOffset:+d.hangOffset||0,
+   labels:deep(d.labels||[]),
+   displayColor:d.displayColor||'#6f767a',
+   displayOpacity:d.displayOpacity==null?1:+d.displayOpacity
+ };
+}
+function applyHangingPackage(d,p){
+ d.itemName=p.itemName||'';
+ d.toolHeight=+p.toolHeight||0;
+ d.hangOffset=+p.hangOffset||0;
+ d.labels=deep(p.labels||[]);
+ d.displayColor=p.displayColor||'#6f767a';
+ d.displayOpacity=p.displayOpacity==null?1:+p.displayOpacity;
+}
+function clearHangingPackage(d){
+ d.itemName='';
+ d.toolHeight=0;
+ d.hangOffset=0;
+ d.labels=[];
+ d.displayColor='#6f767a';
+ d.displayOpacity=1;
+}
+function refreshHangingClipboardUI(){
+ if(!window.pasteHangingBtn)return;
+ pasteHangingBtn.disabled=!hangingItemClipboard;
+ hangingClipState.textContent=hangingItemClipboard
+   ? `${hangingItemClipboard.sourceId} ${hangingItemClipboard.data.itemName||'（名称なし）'}`
+   : 'コピーなし';
+}
+function refreshAfterHangingEdit(){
+ save();
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+ renderStage(+seek.value||0);
+}
+
+function renderSettings(){
+ const d=dev(selectedDevice);if(!d)return;
+ setTitle.textContent=d.id+'　'+(d.itemName||'');
+ s_id.value=d.id;s_item.value=d.itemName||'';s_height.value=d.toolHeight||0;s_hang.value=d.hangOffset||0;
+ const palette=['#333333','#6f767a','#d9d9d9','#b51f2e','#d97b16','#d6bf28','#3d8b4f','#2e70b8','#7652a3'];
+ s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((d.displayOpacity==null?1:d.displayOpacity)*100);s_opacityValue.textContent=s_opacity.value;
+ if(d.type==='constant')specialNotice.innerHTML='<div class="notice">LB / UHL：167 mm/s 固定、加速0秒・減速0秒として扱います。</div>';
+ else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
+ else specialNotice.innerHTML='';
+ labelBody.innerHTML='';
+ for(let i=0;i<10;i++){const l=d.labels[i]||{name:'',pos:''};const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-k="name" value="${l.name}"></td><td><input data-k="pos" type="number" value="${l.pos}"></td>`;labelBody.appendChild(tr)}
+ refreshHangingClipboardUI();
+}
+function syncSettingsFromUI(){
+ const d=dev(selectedDevice);if(!d)return;
+ d.itemName=s_item.value;d.toolHeight=+s_height.value||0;d.hangOffset=+s_hang.value||0;
+ d.displayColor=s_color.value;d.displayOpacity=(+s_opacity.value||100)/100;
+ const arr=[];document.querySelectorAll('#labelBody tr').forEach(tr=>{const n=tr.querySelector('[data-k="name"]').value.trim(),p=tr.querySelector('[data-k="pos"]').value;if(n&&p!=='')arr.push({name:n,pos:+p})});d.labels=arr;
+ scheduleSave();renderDeviceList();renderInitialBulk();renderMonitorCueBrowser();renderStage(+seek.value||0);
+}
+copyHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ hangingItemClipboard={sourceId:d.id,data:hangingPackage(d)};
+ refreshHangingClipboardUI();
+};
+cutHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ pushUndoSnapshot();
+ hangingItemClipboard={sourceId:d.id,data:hangingPackage(d)};
+ clearHangingPackage(d);
+ refreshAfterHangingEdit();
+};
+pasteHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d||!hangingItemClipboard)return;
+ const hasData=(d.itemName||'').trim() || (+d.toolHeight||0)>0 || (d.labels||[]).length;
+ if(hasData && !confirm(`${d.id} の現在の吊り物設定を上書きしますか？`))return;
+ pushUndoSnapshot();
+ applyHangingPackage(d,hangingItemClipboard.data);
+ refreshAfterHangingEdit();
+};
+deleteHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ const hasData=(d.itemName||'').trim() || (+d.toolHeight||0)>0 || (d.labels||[]).length;
+ if(!hasData)return;
+ if(!confirm(`${d.id} の吊り物設定を削除しますか？\n機構そのものと初期位置は削除されません。`))return;
+ pushUndoSnapshot();
+ clearHangingPackage(d);
+ refreshAfterHangingEdit();
+};
+
+['s_item','s_height','s_hang','s_color','s_opacity'].forEach(id=>{
+ const el=document.getElementById(id);el.addEventListener('input',()=>{
+   pushUndoSnapshotForInput(`setting:${selectedDevice}:${id}`);
+   if(id==='s_opacity')s_opacityValue.textContent=s_opacity.value;
+   syncSettingsFromUI();
+ });
+});
+labelBody.addEventListener('input',e=>{
+ const tr=e.target.closest('tr');
+ const row=tr?[...labelBody.children].indexOf(tr):-1;
+ pushUndoSnapshotForInput(`label:${selectedDevice}:${row}:${e.target.dataset.k||''}`);
+ syncSettingsFromUI();
+});
+setAllTop.onclick=()=>{
+ pushUndoSnapshot();
+ const body=document.getElementById('initialBulkBody');
+ devices.forEach((d,i)=>{
+   const p=+d.machineMax;
+   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+   const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
+   if(input)input.value=Math.round(p);
+   if(sel){const match=d.labels.find(x=>Math.abs(+x.pos-p)<0.001);sel.value=match?String(match.pos):'direct';}
+ });
+ syncInitialFromTable();
+};
+setEmptyUpper.onclick=()=>{
+ pushUndoSnapshot();
+ const body=document.getElementById('initialBulkBody');
+ devices.forEach((d,i)=>{
+   if(!/^B\d+$/.test(d.id))return;
+   if((d.itemName||'').trim())return;
+   const p=d.machineMax;
+   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+   const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
+   if(input)input.value=Math.round(+p);
+   if(sel){
+     const match=d.labels.find(x=>Math.abs(+x.pos-(+p))<0.001);
+     sel.value=match?String(match.pos):'direct';
+   }
+ });
+ syncInitialFromTable();
+};
+function syncInitialFromTable(){
+ const body=document.getElementById('initialBulkBody');
+ body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>{
+   const i=+input.dataset.bulkI,v=+input.value;if(Number.isFinite(v))devices[i].initialPosition=v;
+ });
+ scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
+}
+function formatShaku(n){
+ if(!Number.isFinite(n))return '';
+ return n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+}
+function shakuToMm(shaku){return Math.round((+shaku)*303)}
+function mmToShaku(mm){return (+mm)/303}
+let shakuUpdating=false;
+function calcFromShaku(){
+ if(shakuUpdating)return;
+ const s=parseFloat(shakuInput.value);
+ if(!Number.isFinite(s)||s<0){
+   shakuUpdating=true;mmInput.value='';shakuUpdating=false;
+   shakuResult.textContent='尺またはmmを入力すると自動換算します。';
+   return;
+ }
+ const raw=s*303,mm=Math.round(raw);
+ shakuUpdating=true;mmInput.value=mm;shakuUpdating=false;
+ shakuResult.innerHTML=`<strong>${formatShaku(s)}尺 = ${mm}mm</strong><br>${formatShaku(s)} × 303 = ${raw.toFixed(3).replace(/\.?0+$/,'')}mm → ${mm}mm`;
+}
+function calcFromMm(){
+ if(shakuUpdating)return;
+ const raw=parseFloat(mmInput.value);
+ if(!Number.isFinite(raw)||raw<0){
+   shakuUpdating=true;shakuInput.value='';shakuUpdating=false;
+   shakuResult.textContent='尺またはmmを入力すると自動換算します。';
+   return;
+ }
+ const mm=Math.round(raw),s=mmToShaku(mm);
+ shakuUpdating=true;mmInput.value=mm;shakuInput.value=formatShaku(s);shakuUpdating=false;
+ shakuResult.innerHTML=`<strong>${mm}mm = ${formatShaku(s)}尺</strong><br>${mm} ÷ 303 = ${formatShaku(s)}尺`;
+}
+shakuInput.addEventListener('input',calcFromShaku);
+mmInput.addEventListener('input',calcFromMm);
+
+function updateSimpleCalc(){
+ const a=parseFloat(calcA.value),b=parseFloat(calcB.value);
+ if(!Number.isFinite(a)||!Number.isFinite(b)){
+   calcResult.value='';
+   calcMessage.textContent='2つの数値を入力してください。';
+   return;
+ }
+ const result=calcOp.value==='-'?a-b:a+b;
+ calcResult.value=Number.isInteger(result)?String(result):String(+result.toFixed(6));
+ calcMessage.textContent=`${a} ${calcOp.value==='-'?'－':'＋'} ${b} ＝ ${calcResult.value}`;
+}
+calcA.addEventListener('input',updateSimpleCalc);
+calcB.addEventListener('input',updateSimpleCalc);
+calcOp.addEventListener('change',updateSimpleCalc);
+
+document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+ if(b.dataset.tab==='monitor')setTimeout(()=>{renderMonitorCueBrowser();renderStage(+seek.value||0)},0);
+ if(b.dataset.tab==='initial')renderInitialBulk();
+});
+window.addEventListener('resize',()=>{if(monitor.classList.contains('active'))renderStage(+seek.value||0)});
+csvInitBtn.onclick=()=>csvInitFile.click();
+csvInitFile.onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+   const buf=await file.arrayBuffer();
+   const csvText=decodeCsvBuffer(buf);
+   importInitialSetupCsv(csvText);
+   clearEditHistory();
+ }catch(err){
+   console.error(err);
+   alert('CSVの読み込みに失敗しました。');
+ }
+ e.target.value='';
+};
+
+undoBtn.onclick=undoEdit;
+redoBtn.onclick=redoEdit;
+document.addEventListener('keydown',e=>{
+ const mod=e.ctrlKey||e.metaKey;
+ if(!mod)return;
+ if(document.getElementById('shakuCalc')?.contains(document.activeElement))return;
+
+ const key=e.key.toLowerCase();
+ if(key==='z' && !e.shiftKey){
+   if(!undoStack.length)return;
+   e.preventDefault();undoEdit();return;
+ }
+ if((key==='y') || (key==='z' && e.shiftKey)){
+   if(!redoStack.length)return;
+   e.preventDefault();redoEdit();
+ }
+});
+updateHistoryButtons();
+
+resetProjectBtn.onclick=resetProjectData;
+exportDeviceCsvBtn.onclick=exportDeviceSetupCsv;
+exportCueCsvBtn.onclick=exportCueSheetCsv;
+exportJsonBtn.onclick=exportProjectJson;
+importJsonBtn.onclick=()=>importJsonFile.click();
+importJsonFile.onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+   const obj=JSON.parse(await file.text());
+   importProjectJson(obj);
+   clearEditHistory();
+ }catch(err){
+   console.error(err);
+   alert('JSONの読み込みに失敗しました。ファイル内容を確認してください。');
+ }
+ e.target.value='';
+};
+
+load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
+</script>
+</body>
+</html>
