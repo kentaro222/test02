@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC試作 v49</title>
+<title>舞台機構シミュレーター / PC試作 v51</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -238,7 +238,7 @@ button,input,select{font:inherit}
     <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
     <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
   </div>
-  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v49</div>
+  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v51</div>
 </div>
 
 <section id="monitor" class="tab active">
@@ -380,7 +380,7 @@ button,input,select{font:inherit}
 </section>
 
 <script>
-const BASE_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0, "defaultDec": 0}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
+const BASE_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
 const KEY='stageCuePrototypeV3';
 const deep=x=>JSON.parse(JSON.stringify(x));
 let devices=deep(BASE_DEVICES);
@@ -407,7 +407,18 @@ function normalizeCueEntries(){
    }else{
      q.number=formatCueNumber(q.number)||'000.00';
      q.runs=q.runs||[];
-     q.runs.forEach(r=>inferRunTargetMode(r));
+     q.runs.forEach(r=>{
+       inferRunTargetMode(r);
+       const d=dev(r.device);
+       if(d?.type==='constant'){
+         r.speed=fixedDeviceSpeed(d);
+         r.acc=FIXED_ACC;
+         r.dec=FIXED_DEC;
+         r.use2=false;
+         r.pos2='';
+         r.speed2='';
+       }
+     });
    }
  });
 }
@@ -711,7 +722,7 @@ function deviceFromCsvRow(cols,oldDevice){
    d.machineMin=0;d.machineMax=10100;d.machineMin=0;d.machineMax=10100;
  }
  if(dtype==='constant'){
-   d.defaultSpeed=167;d.defaultAcc=0;d.defaultDec=0;
+   d.defaultSpeed=fixedDeviceSpeed(d);d.defaultAcc=FIXED_ACC;d.defaultDec=FIXED_DEC;
  }else{
    d.defaultSpeed=d.defaultSpeed||1000;
    d.defaultAcc=Number.isFinite(+d.defaultAcc)?+d.defaultAcc:2;
@@ -955,9 +966,9 @@ function exportCueSheetCsv(){
      const validation=validateRun(r,start);
 
      const fixed=d.type==='constant';
-     const speed=fixed?167:(+r.speed||0);
-     const acc=fixed?0:(+r.acc||0);
-     const dec=fixed?0:(+r.dec||0);
+     const speed=fixed?fixedDeviceSpeed(d):(+r.speed||0);
+     const acc=fixed?FIXED_ACC:(+r.acc||0);
+     const dec=fixed?FIXED_DEC:(+r.dec||0);
      const direction=target>start?'▲':target<start?'▼':'';
 
      const row=[
@@ -1151,6 +1162,11 @@ function positionBeforeCue(index){
 }
 const MAX_SPEED=1500;
 const MAX_ACCEL=750;
+const FIXED_ACC=0.1;
+const FIXED_DEC=0.1;
+function fixedDeviceSpeed(d){
+ return d && /^LB[1-3]$/.test(d.id)?83:167;
+}
 
 function floorTenthSafe(n){return Math.floor((n+1e-9)*10)/10}
 function machineBaseTime(distance,speed){return Math.floor((distance/speed)*10+1e-9)/10}
@@ -1163,7 +1179,7 @@ function between(p,a,b){return p>=Math.min(a,b)&&p<=Math.max(a,b)}
 function solvePrimarySpeedFromTime(r,start,requestedTime){
  const d=dev(r.device);
  if(!d)return {ok:false,msg:'機器を確認してください'};
- if(d.type==='constant')return {ok:false,msg:'LB / UHL は 167 mm/s 固定のため、時間から速度を逆算できません'};
+ if(d.type==='constant')return {ok:false,msg:`${d.id} は ${fixedDeviceSpeed(d)} mm/s 固定のため、時間から速度を逆算できません`};
  const requested=Number(requestedTime);
  if(!Number.isFinite(requested)||requested<=0)return {ok:false,msg:'運転タイムは0より大きい値を入力してください'};
 
@@ -1206,9 +1222,14 @@ function validateRun(r,start){
    return {ok:false,msg:`位置が装置限界（${Math.round(lo)}〜${Math.round(hi)} mm）外です`};
  }
 
- // LB / UHL: 167 mm/s fixed, no acceleration/deceleration.
+ // LB1-3: 83 mm/s fixed. UHL: 167 mm/s fixed. Acceleration/deceleration are fixed at 0.1 s.
  if(d.type==='constant'){
-   return {ok:true,total:machineBaseTime(D,167),tTrans:0,D};
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const total=Math.max(
+     FIXED_ACC+FIXED_DEC,
+     machineBaseTime(D,fixedSpeed)+(FIXED_ACC+FIXED_DEC)/2
+   );
+   return {ok:true,total,tTrans:0,D,dAcc:fixedSpeed*FIXED_ACC/2,dDec:fixedSpeed*FIXED_DEC/2};
  }
 
  const v1=+r.speed,acc=+r.acc,dec=+r.dec;
@@ -1304,9 +1325,13 @@ function runPositionAt(r,start,t){
  const lt=t-delay,end=+r.target;
 
  if(d.type==='constant'){
-   const physical=Math.abs(end-start)/167;
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const D=Math.abs(end-start);
+   const dA=fixedSpeed*FIXED_ACC/2,dD=fixedSpeed*FIXED_DEC/2;
+   const dC=Math.max(0,D-dA-dD);
+   const physical=FIXED_ACC+dC/fixedSpeed+FIXED_DEC;
    const scaled=vr.total>0?lt*physical/vr.total:lt;
-   return motionPos(start,end,167,0,0,scaled);
+   return motionPos(start,end,fixedSpeed,FIXED_ACC,FIXED_DEC,scaled);
  }
 
  const v1=+r.speed,acc=+r.acc,dec=+r.dec;
@@ -1362,7 +1387,17 @@ function runLiveState(r,start,t){
  const lt=Math.max(0,t-delay);
  if(lt>=vr.total)return {label:'完了',cls:'done',second:false};
 
- if(d.type==='constant')return {label:'定速',cls:'run',second:false};
+ if(d.type==='constant'){
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const D=Math.abs((+r.target)-start);
+   const dA=fixedSpeed*FIXED_ACC/2,dD=fixedSpeed*FIXED_DEC/2;
+   const dC=Math.max(0,D-dA-dD),tC=dC/fixedSpeed;
+   const physical=FIXED_ACC+tC+FIXED_DEC;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   if(scaled<FIXED_ACC)return {label:'加速中',cls:'run',second:false};
+   if(scaled>=FIXED_ACC+tC)return {label:'減速中',cls:'run',second:false};
+   return {label:'定速',cls:'run',second:false};
+ }
 
  if(!r.use2){
    const end=+r.target,v=+r.speed||1,acc=+r.acc||0,dec=+r.dec||0;
@@ -1613,7 +1648,7 @@ function renderMonitorCueBrowser(){
        const state=runLiveState(r,st,+seek.value||0);
        const cur=runPositionAt(r,st,+seek.value||0);
        const clearance=hangingBottomMM(d,cur);
-       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?167:Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?0:(+r.acc||0)}</div><div>${d?.type==='constant'?0:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
      }).join('');
      detail=`<div class="mon-run-grid">${cells}</div>`;
    }
@@ -1735,10 +1770,10 @@ function renderCueEditor(){
     <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
     <td><input class="target" data-ri="${ri}" data-f="target" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
     <td class="readonly">${Math.round(dist)}</td>
-    <td><input data-ri="${ri}" data-f="speed" type="number" min="1" max="1500" value="${fixed?167:r.speed}" ${fixed?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="time" type="number" min="0.1" step=".1" value="${Number.isFinite(time)?time.toFixed(1):''}" ${fixed||duplicate?'disabled':''} title="${fixed?'167 mm/s 固定':(duplicate?'同一Cueの機器重複を解消してください':'運転タイムを入力すると速度を逆算します（遅延は別計算）')}"></td>
-    <td><input data-ri="${ri}" data-f="acc" type="number" min="0" step=".1" value="${fixed?0:r.acc}" ${fixed?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="dec" type="number" min="0" step=".1" value="${fixed?0:r.dec}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="speed" type="number" min="1" max="1500" value="${fixed?fixedDeviceSpeed(d):r.speed}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="time" type="number" min="0.1" step=".1" value="${Number.isFinite(time)?time.toFixed(1):''}" ${fixed||duplicate?'disabled':''} title="${fixed?fixedDeviceSpeed(d)+' mm/s 固定':(duplicate?'同一Cueの機器重複を解消してください':'運転タイムを入力すると速度を逆算します（遅延は別計算）')}"></td>
+    <td><input data-ri="${ri}" data-f="acc" type="number" min="0" step=".1" value="${fixed?FIXED_ACC:r.acc}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="dec" type="number" min="0" step=".1" value="${fixed?FIXED_DEC:r.dec}" ${fixed?'disabled':''}></td>
     <td><input data-ri="${ri}" data-f="delay" type="number" min="0" step=".1" value="${r.delay||0}"></td>
     <td><input data-ri="${ri}" data-f="use2" type="checkbox" ${r.use2?'checked':''} ${fixed?'disabled':''}></td>
     <td><input data-ri="${ri}" data-f="pos2" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.pos2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
@@ -1816,7 +1851,7 @@ function renderCueEditor(){
      return;
    }
    pushUndoSnapshot();
-   if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?167:(r.speed||1000);r.acc=d.type==='constant'?0:(r.acc||2);r.dec=d.type==='constant'?0:(r.dec||2)}else if(f==='targetSelect'){const d=dev(r.device);if(el.value==='direct'){r.targetMode='direct'}else if(el.value.startsWith('label:')){const li=+el.value.slice(6),l=d?.labels?.[li];if(l){r.targetMode=l.name;r.target=+l.pos}else r.targetMode='direct'}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;
+   if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?fixedDeviceSpeed(d):(r.speed||1000);r.acc=d.type==='constant'?FIXED_ACC:(r.acc||2);r.dec=d.type==='constant'?FIXED_DEC:(r.dec||2);if(d.type==='constant'){r.use2=false;r.pos2='';r.speed2=''}}else if(f==='targetSelect'){const d=dev(r.device);if(el.value==='direct'){r.targetMode='direct'}else if(el.value.startsWith('label:')){const li=+el.value.slice(6),l=d?.labels?.[li];if(l){r.targetMode=l.name;r.target=+l.pos}else r.targetMode='direct'}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;
    save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
  });
  renumberOpenBtn.onclick=()=>{renumberBox.style.display=renumberBox.style.display==='none'?'grid':'none'};
@@ -1932,7 +1967,7 @@ function renderSettings(){
  s_id.value=d.id;s_item.value=d.itemName||'';s_height.value=d.toolHeight||0;s_hang.value=d.hangOffset||0;
  const palette=['#333333','#6f767a','#d9d9d9','#b51f2e','#d97b16','#d6bf28','#3d8b4f','#2e70b8','#7652a3'];
  s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((d.displayOpacity==null?1:d.displayOpacity)*100);s_opacityValue.textContent=s_opacity.value;
- if(d.type==='constant')specialNotice.innerHTML='<div class="notice">LB / UHL：167 mm/s 固定、加速0秒・減速0秒として扱います。</div>';
+ if(d.type==='constant')specialNotice.innerHTML=`<div class="notice">${/^LB[1-3]$/.test(d.id)?'LB1〜3：83':'UHL：167'} mm/s 固定、加速0.1秒・減速0.1秒固定として扱います。</div>`;
  else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
  else specialNotice.innerHTML='';
  labelBody.innerHTML='';
