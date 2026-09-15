@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC試作 v46</title>
+<title>舞台機構シミュレーター / PC試作 v49</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -13,20 +13,20 @@
 *{box-sizing:border-box}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"BIZ UDGothic","BIZ UDゴシック","MS Gothic",monospace;overflow:hidden}
 button,input,select{font:inherit}
-.topbar{height:54px;display:flex;align-items:center;gap:8px;padding:7px 10px;background:#191d1f;border-bottom:1px solid #667174}
-.tab-btn{height:38px;min-width:145px;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;cursor:pointer}
+.topbar{height:54px;display:flex;align-items:center;gap:4px;padding:6px 8px;background:#191d1f;border-bottom:1px solid #667174;overflow:hidden}
+.tab-btn{height:34px;min-width:0;flex:0 1 112px;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;font-size:11px;padding:0 8px;white-space:nowrap;cursor:pointer}
 .tab-btn.active{background:#0898df;box-shadow:inset 0 -3px 0 #9ef0ff}
 .top-file-actions{display:flex;gap:6px;margin-left:auto}
-.file-btn{height:32px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 12px;cursor:pointer}
+.file-btn{height:30px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 7px;font-size:11px;white-space:nowrap;cursor:pointer}
 .file-btn:hover{background:#4a565b}
 .history-actions{display:flex;gap:4px;margin-left:auto}
-.history-actions button{height:30px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:3px;padding:0 8px;font-family:inherit;cursor:pointer}
+.history-actions button{height:30px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:3px;padding:0 6px;font-family:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
 .history-actions button:disabled{opacity:.35;cursor:default}
 .history-actions button:not(:disabled):hover{background:#465157}
 .top-file-actions{margin-left:4px}
 .file-btn.danger{background:#7d292e;border-color:#b85259}
 .file-btn.danger:hover{background:#96343b}
-.save-state{font-size:12px;color:#8fd6a4;min-width:58px;text-align:right}.save-state.saving{color:#ffd86b}.app-title{font-size:12px;color:#9ba7ab}
+.save-state{font-size:11px;color:#8fd6a4;min-width:52px;text-align:right;white-space:nowrap}.save-state.saving{color:#ffd86b}.save-state.error{color:#ff7b80}.app-title{font-size:10px;color:#9ba7ab;white-space:nowrap}
 .tab{display:none;height:calc(100vh - 54px)}
 .tab.active{display:block}
 .monitor-layout{height:100%;display:grid;grid-template-columns:1fr 325px;gap:8px;padding:8px}
@@ -89,6 +89,7 @@ button,input,select{font:inherit}
 .editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
 .editor-toolbar button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 10px}
 .editor-toolbar button.danger{background:#8f2b31;border-color:#d85c64}
+.editor-toolbar button:disabled{opacity:.38;cursor:default}
 .editor-toolbar button.mutedbtn{background:#4b5357;border-color:#737f84}
 .renumber-box{display:grid;grid-template-columns:repeat(4,minmax(120px,180px));gap:8px;align-items:end;background:#33393c;border:1px solid #626d72;padding:8px;margin:8px 0}
 .renumber-box label{font-size:11px;color:#c0c9cc;display:block;margin-bottom:3px}
@@ -137,6 +138,8 @@ button,input,select{font:inherit}
 .initial-full-table .mmcol{width:150px}
 .initial-full-table .rangecol{width:170px;color:#b9c5c9}
 @media(max-width:1200px){.settings-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1500px){.app-title{display:none}.tab-btn{flex-basis:100px;padding:0 6px}.file-btn{padding:0 6px}.history-actions button{padding:0 5px}}
+@media(max-width:1250px){.save-state{display:none}.tab-btn{flex-basis:92px;font-size:10px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
 
 .main-monitor{height:100%;display:grid;grid-template-rows:65% 35%;gap:6px;padding:6px}
 .monitor-top,.monitor-bottom{min-height:0}
@@ -228,14 +231,14 @@ button,input,select{font:inherit}
   <div class="top-file-actions">
     <button id="csvInitBtn" class="file-btn">装置CSV読込</button>
     <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
-    <button id="exportDeviceCsvBtn" class="file-btn">装置CSV保存</button>
-    <button id="exportCueCsvBtn" class="file-btn">キューCSV保存</button>
+    <button id="exportDeviceCsvBtn" class="file-btn">装置CSV書出</button>
+    <button id="exportCueCsvBtn" class="file-btn">キューCSV書出</button>
     <button id="exportJsonBtn" class="file-btn">JSON保存</button>
     <button id="importJsonBtn" class="file-btn">JSON読込</button>
     <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
     <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
   </div>
-  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v46</div>
+  <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC試作 v49</div>
 </div>
 
 <section id="monitor" class="tab active">
@@ -300,8 +303,8 @@ button,input,select{font:inherit}
       <div class="settings-grid">
         <div class="field"><label>機構名称</label><input id="s_id" readonly></div>
         <div class="field"><label>吊物名称</label><input id="s_item"></div>
-        <div class="field"><label>道具高さ</label><input id="s_height" type="number"><div class="small-muted">mm</div></div>
-        <div class="field"><label>桁吊り</label><input id="s_hang" type="number" value="0"><div class="small-muted">mm</div></div>
+        <div class="field"><label>道具高さ</label><input id="s_height" type="number" min="0"><div class="small-muted">mm</div></div>
+        <div class="field"><label>桁吊り</label><input id="s_hang" type="number" min="0" value="0"><div class="small-muted">mm</div></div>
         <div class="field"><label>表示色</label><select id="s_color">
 <option value="#333333">黒</option><option value="#6f767a">グレー</option><option value="#d9d9d9">白</option>
 <option value="#b51f2e">赤</option><option value="#d97b16">オレンジ</option><option value="#d6bf28">黄</option>
@@ -435,22 +438,52 @@ function lastPlayableNumber(){
  return '000.00';
 }
 
+function escapeHtml(v){
+ return String(v??'')
+   .replace(/&/g,'&amp;')
+   .replace(/</g,'&lt;')
+   .replace(/>/g,'&gt;')
+   .replace(/"/g,'&quot;')
+   .replace(/'/g,'&#39;');
+}
 function load(){
  try{
-  const d=JSON.parse(localStorage.getItem(KEY)||'null');
-  if(d?.devices) devices=d.devices;
-  if(d?.cues){cues=d.cues;normalizeCueEntries();}
- }catch(e){}
+  const raw=localStorage.getItem(KEY);
+  if(!raw)return;
+  const d=JSON.parse(raw);
+  const checked=validateProjectPayload(d);
+  if(!checked.ok)throw new Error(checked.msg);
+  devices=deep(d.devices);
+  cues=deep(d.cues);normalizeCueEntries();
+  if(!cues.length)cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+ }catch(e){
+  console.error('localStorage load failed',e);
+  if(typeof saveState!=='undefined'){saveState.textContent='保存データ読込失敗';saveState.classList.remove('saving');saveState.classList.add('error')}
+ }
 }
 let saveTimer=null;
 function save(){
- localStorage.setItem(KEY,JSON.stringify({devices,cues}));
- if(typeof saveState!=='undefined'){saveState.textContent='保存済み';saveState.classList.remove('saving')}
+ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+ try{
+  localStorage.setItem(KEY,JSON.stringify({app:'stage-cue-simulator',formatVersion:1,devices,cues}));
+  if(typeof saveState!=='undefined'){saveState.textContent='保存済み';saveState.classList.remove('saving','error')}
+  return true;
+ }catch(e){
+  console.error('localStorage save failed',e);
+  if(typeof saveState!=='undefined'){saveState.textContent='保存失敗';saveState.classList.remove('saving');saveState.classList.add('error')}
+  return false;
+ }
 }
 function scheduleSave(){
- if(typeof saveState!=='undefined'){saveState.textContent='保存中…';saveState.classList.add('saving')}
- clearTimeout(saveTimer);saveTimer=setTimeout(save,350);
+ if(typeof saveState!=='undefined'){saveState.textContent='保存中…';saveState.classList.remove('error');saveState.classList.add('saving')}
+ clearTimeout(saveTimer);
+ saveTimer=setTimeout(()=>{saveTimer=null;save()},350);
 }
+function flushScheduledSave(){
+ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;save();}
+}
+window.addEventListener('pagehide',flushScheduledSave);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushScheduledSave()});
 
 const HISTORY_LIMIT=50;
 let undoStack=[];
@@ -621,9 +654,16 @@ function parseCsvLine(line){
  return out;
 }
 function decodeCsvBuffer(buf){
- // This console export is normally CP932/Shift-JIS.
- try{return new TextDecoder('shift-jis').decode(buf)}
- catch(e){return new TextDecoder('utf-8').decode(buf)}
+ // 実機出力は通常CP932/Shift-JIS。UTF-8(BOM含む)も受け付ける。
+ const bytes=new Uint8Array(buf);
+ if(bytes.length>=3 && bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
+   return new TextDecoder('utf-8').decode(buf);
+ }
+ try{
+   return new TextDecoder('utf-8',{fatal:true}).decode(buf);
+ }catch(e){
+   return new TextDecoder('shift-jis').decode(buf);
+ }
 }
 function isTargetCsvDevice(id){
  return id==='割UD' || id==='暗転幕' || id==='UHL' ||
@@ -977,23 +1017,97 @@ function exportProjectJson(){
  a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
 }
-function importProjectJson(obj){
- if(!obj || !Array.isArray(obj.devices) || !Array.isArray(obj.cues)){
-   alert('このJSONは読み込めません。devices / cues が見つかりません。');
-   return;
+function validateProjectPayload(obj){
+ if(!obj || typeof obj!=='object')return {ok:false,msg:'JSONのルート形式が不正です。'};
+ if(obj.app!=null && obj.app!=='stage-cue-simulator')return {ok:false,msg:'別のアプリのJSONです。'};
+ if(obj.formatVersion!=null && (!Number.isInteger(+obj.formatVersion) || +obj.formatVersion<1 || +obj.formatVersion>1)){
+   return {ok:false,msg:`未対応のJSON形式です（formatVersion: ${obj.formatVersion}）。`};
  }
- devices=deep(obj.devices);
- cues=deep(obj.cues);normalizeCueEntries();
- if(!cues.length)cues=[{number:"001.00",name:"新規キュー",runs:[]}];
- selectedCue=0;selectedListIndex=0;
- selectedDevice=devices.find(d=>d.id==='B1')?'B1':(devices[0]?.id||'');
- save();
- renderDeviceList();
- renderSettings();
- renderInitialBulk();
- renderCueList();
- selectCue(0);
- alert('JSONを読み込みました。');
+ if(!Array.isArray(obj.devices) || obj.devices.length===0)return {ok:false,msg:'devices が空、または配列ではありません。'};
+ if(!Array.isArray(obj.cues))return {ok:false,msg:'cues が配列ではありません。'};
+
+ const ids=new Set();
+ for(let i=0;i<obj.devices.length;i++){
+   const d=obj.devices[i];
+   if(!d || typeof d!=='object')return {ok:false,msg:`devices[${i}] の形式が不正です。`};
+   const id=String(d.id??'').trim();
+   if(!id)return {ok:false,msg:`devices[${i}] の機構IDが空です。`};
+   if(ids.has(id))return {ok:false,msg:`機構ID「${id}」が重複しています。`};
+   ids.add(id);
+   if(!['baton','curtain','constant'].includes(d.type))return {ok:false,msg:`${id}: type が不正です。`};
+   if(d.itemName!=null && typeof d.itemName!=='string')return {ok:false,msg:`${id}: 吊り物名称が不正です。`};
+   for(const k of ['machineMin','machineMax','userMin','userMax','toolHeight','hangOffset','defaultSpeed','defaultAcc','defaultDec']){
+     if(d[k]!=null && d[k]!=='' && !Number.isFinite(+d[k]))return {ok:false,msg:`${id}: ${k} が数値ではありません。`};
+   }
+   if(!Number.isFinite(+d.machineMin) || !Number.isFinite(+d.machineMax) || +d.machineMin>+d.machineMax){
+     return {ok:false,msg:`${id}: 機械限界が不正です。`};
+   }
+   if(d.displayColor!=null && typeof d.displayColor!=='string')return {ok:false,msg:`${id}: 表示色が不正です。`};
+   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 透過率が不正です。`};
+   if(!Array.isArray(d.labels))return {ok:false,msg:`${id}: labels が配列ではありません。`};
+   for(let li=0;li<d.labels.length;li++){
+     const l=d.labels[li];
+     if(!l || typeof l!=='object' || !Number.isFinite(+l.pos))return {ok:false,msg:`${id}: ラベル${li+1}の位置が不正です。`};
+     if(typeof l.name!=='string')return {ok:false,msg:`${id}: ラベル${li+1}の名称が不正です。`};
+   }
+   if(d.initialPosition!=null && !Number.isFinite(+d.initialPosition))return {ok:false,msg:`${id}: 初期位置が不正です。`};
+ }
+
+ for(let qi=0;qi<obj.cues.length;qi++){
+   const q=obj.cues[qi];
+   if(!q || typeof q!=='object')return {ok:false,msg:`cues[${qi}] の形式が不正です。`};
+   if(q.kind==='memo'){
+     if(q.text!=null && typeof q.text!=='string')return {ok:false,msg:`メモ ${qi+1}: text が文字列ではありません。`};
+     continue;
+   }
+   if(formatCueNumber(q.number)==null)return {ok:false,msg:`Cue ${qi+1}: Q番号が不正です。`};
+   if(q.name!=null && typeof q.name!=='string')return {ok:false,msg:`Cue ${qi+1}: Cue名称が不正です。`};
+   if(!Array.isArray(q.runs))return {ok:false,msg:`Cue ${qi+1}: runs が配列ではありません。`};
+   for(let ri=0;ri<q.runs.length;ri++){
+     const r=q.runs[ri];
+     if(!r || typeof r!=='object')return {ok:false,msg:`Cue ${qi+1} / 運転${ri+1}: 形式が不正です。`};
+     if(typeof r.device!=='string' || !ids.has(r.device))return {ok:false,msg:`Cue ${qi+1}: 未登録機構「${String(r.device??'')}」を参照しています。`};
+     if(r.targetMode!=null && typeof r.targetMode!=='string')return {ok:false,msg:`Cue ${qi+1} / ${r.device}: targetMode が不正です。`};
+     if(!Number.isFinite(+r.target))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: 目標位置が不正です。`};
+     for(const k of ['speed','acc','dec','delay']){
+       if(r[k]!=null && r[k]!=='' && !Number.isFinite(+r[k]))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: ${k} が数値ではありません。`};
+     }
+     if(r.use2){
+       if(!Number.isFinite(+r.pos2) || !Number.isFinite(+r.speed2))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: 2位置・2速度が不正です。`};
+     }
+   }
+ }
+ return {ok:true};
+}
+function importProjectJson(obj){
+ const checked=validateProjectPayload(obj);
+ if(!checked.ok){alert('このJSONは読み込めません。\n'+checked.msg);return false;}
+
+ const before={devices:deep(devices),cues:deep(cues),selectedCue,selectedListIndex,selectedDevice};
+ try{
+   const nextDevices=deep(obj.devices);
+   const nextCues=deep(obj.cues);
+   devices=nextDevices;
+   cues=nextCues;
+   normalizeCueEntries();
+   if(!cues.length)cues=[{number:"001.00",name:"新規キュー",runs:[]}];
+   selectedCue=0;selectedListIndex=0;
+   selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+   const saved=save();
+   renderDeviceList();
+   renderSettings();
+   renderInitialBulk();
+   renderCueList();
+   selectCue(0);
+   alert(saved?'JSONを読み込みました。':'JSONを読み込みましたが、ローカル保存に失敗しました。JSON書出でバックアップしてください。');
+   return true;
+ }catch(err){
+   console.error('JSON import commit failed',err);
+   devices=before.devices;cues=before.cues;selectedCue=before.selectedCue;selectedListIndex=before.selectedListIndex;selectedDevice=before.selectedDevice;
+   try{renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(selectedCue);}catch(e){console.error(e)}
+   alert('JSONの読み込み処理中にエラーが発生したため、変更を取り消しました。');
+   return false;
+ }
 }
 function dev(id){return devices.find(d=>d.id===id)}
 function labelPos(d,name){const l=d.labels.find(x=>x.name===name);return l?+l.pos:null}
@@ -1013,9 +1127,26 @@ function initialPosition(d){
  return +d.machineMax;
 }
 function buildInitial(){const o={};devices.forEach(d=>o[d.id]=initialPosition(d));return o}
+function cueDeviceCounts(index){
+ const counts=new Map();
+ for(const r of cues[index]?.runs||[]){
+   const id=String(r.device??'');
+   counts.set(id,(counts.get(id)||0)+1);
+ }
+ return counts;
+}
 function positionBeforeCue(index){
  const pos=buildInitial();
- for(let i=0;i<index;i++) for(const r of cues[i].runs||[]){syncRunTargetFromLabel(r);pos[r.device]=+r.target;}
+ for(let i=0;i<index;i++){
+   if(isMemoEntry(cues[i]))continue;
+   const counts=cueDeviceCounts(i);
+   for(const r of cues[i].runs||[]){
+     if((counts.get(String(r.device??''))||0)>1)continue;
+     const start=pos[r.device];
+     const v=validateRun(r,start);
+     if(v.ok)pos[r.device]=+r.target;
+   }
+ }
  return pos;
 }
 const MAX_SPEED=1500;
@@ -1027,11 +1158,42 @@ function transitionDisplayTime(v1,v2){return Math.floor((Math.abs(v1-v2)/1000)*1
 function minRampTime(speed){return Math.ceil((speed/MAX_ACCEL)*10-1e-9)/10}
 function between(p,a,b){return p>=Math.min(a,b)&&p<=Math.max(a,b)}
 
+// Entering a desired operation time in the Cue editor recalculates the primary speed.
+// Operation time excludes delay; delay is displayed and handled independently.
+function solvePrimarySpeedFromTime(r,start,requestedTime){
+ const d=dev(r.device);
+ if(!d)return {ok:false,msg:'機器を確認してください'};
+ if(d.type==='constant')return {ok:false,msg:'LB / UHL は 167 mm/s 固定のため、時間から速度を逆算できません'};
+ const requested=Number(requestedTime);
+ if(!Number.isFinite(requested)||requested<=0)return {ok:false,msg:'運転タイムは0より大きい値を入力してください'};
+
+ const requestedShown=Math.round(requested*10)/10;
+ let best=null;
+ for(let speed=1;speed<=MAX_SPEED;speed++){
+   const candidate={...r,speed};
+   const v=validateRun(candidate,start);
+   if(!v.ok)continue;
+   const total=v.total;
+   const shown=Math.round(total*10)/10;
+   const displayDiff=Math.abs(shown-requestedShown);
+   const rawDiff=Math.abs(total-requested);
+   if(!best || displayDiff<best.displayDiff-1e-9 ||
+      (Math.abs(displayDiff-best.displayDiff)<1e-9 && rawDiff<best.rawDiff-1e-9) ||
+      (Math.abs(displayDiff-best.displayDiff)<1e-9 && Math.abs(rawDiff-best.rawDiff)<1e-9 && speed<best.speed)){
+     best={speed,total,shown,displayDiff,rawDiff};
+   }
+ }
+ if(!best)return {ok:false,msg:'現在の位置・加速・減速・2位置設定では成立する速度がありません'};
+ return {...best,ok:true,exact:best.displayDiff<0.049};
+}
+
 function validateRun(r,start){
  const d=dev(r.device);
  if(!d)return {ok:false,msg:'機器を確認してください'};
  syncRunTargetFromLabel(r);
  const end=+r.target;
+ const delay=Number(r.delay??0);
+ if(!Number.isFinite(delay) || delay<0)return {ok:false,msg:'ディレイは0秒以上にしてください'};
  if(!Number.isFinite(start)||!Number.isFinite(end))return {ok:false,msg:'現在地・目的地を確認してください'};
  if(start===end)return {ok:false,msg:'現在地と目的地が同じです'};
 
@@ -1098,7 +1260,12 @@ function validateRun(r,start){
 
 function cueValidation(index){
  const starts=positionBeforeCue(index),errors=[];
+ const counts=cueDeviceCounts(index);
  (cues[index]?.runs||[]).forEach((r,i)=>{
+   if((counts.get(String(r.device??''))||0)>1){
+     errors.push({index:i,device:r.device,msg:'同一Cue内で同じ機器が重複しています'});
+     return;
+   }
    const v=validateRun(r,starts[r.device]);
    if(!v.ok)errors.push({index:i,device:r.device,msg:v.msg});
  });
@@ -1106,8 +1273,9 @@ function cueValidation(index){
 }
 
 function cueDuration(cue,index){
- const starts=positionBeforeCue(index);let mx=0;
+ const starts=positionBeforeCue(index),counts=cueDeviceCounts(index);let mx=0;
  for(const r of cue.runs||[]){
+   if((counts.get(String(r.device??''))||0)>1)continue;
    const v=validateRun(r,starts[r.device]);
    if(v.ok)mx=Math.max(mx,v.total+(+r.delay||0));
  }
@@ -1130,10 +1298,10 @@ function motionPos(start,end,speed,acc,dec,t){
 
 function runPositionAt(r,start,t){
  const d=dev(r.device);if(!d)return start;
- const delay=+r.delay||0;if(t<=delay)return start;
- const lt=t-delay,end=+r.target;
  const vr=validateRun(r,start);
  if(!vr.ok)return start;
+ const delay=+r.delay||0;if(t<=delay)return start;
+ const lt=t-delay,end=+r.target;
 
  if(d.type==='constant'){
    const physical=Math.abs(end-start)/167;
@@ -1186,11 +1354,11 @@ function hangingBottomMM(d,batonPos){
 function runLiveState(r,start,t){
  const d=dev(r.device);
  if(!d)return {label:'—',cls:'wait',second:false};
- const delay=+r.delay||0;
  if(t<=0)return {label:'スタンバイ',cls:'wait',second:false};
- if(t<delay)return {label:'ディレイ',cls:'wait',second:false};
  const vr=validateRun(r,start);
  if(!vr.ok)return {label:'ERR',cls:'wait',second:false};
+ const delay=+r.delay||0;
+ if(t<delay)return {label:'ディレイ',cls:'wait',second:false};
  const lt=Math.max(0,t-delay);
  if(lt>=vr.total)return {label:'完了',cls:'done',second:false};
 
@@ -1247,8 +1415,11 @@ function updateMonitorRunLive(t=0){
 }
 
 function positionsAt(index,t){
- const starts=positionBeforeCue(index),p={...starts},cue=cues[index];
- for(const r of cue.runs||[])p[r.device]=runPositionAt(r,starts[r.device],t);
+ const starts=positionBeforeCue(index),p={...starts},cue=cues[index],counts=cueDeviceCounts(index);
+ for(const r of cue.runs||[]){
+   if((counts.get(String(r.device??''))||0)>1)continue;
+   p[r.device]=runPositionAt(r,starts[r.device],t);
+ }
  return p;
 }
 function stageLayout(width){
@@ -1428,8 +1599,8 @@ function renderMonitorCueBrowser(){
  const starts=positionBeforeCue(selectedCue);
  box.innerHTML=cues.map((q,i)=>{
    if(isMemoEntry(q)){
-     const memoText=q.text||'メモ';
-     return `<div class="mon-q memo"><div class="mon-q-header" title="${memoText.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}">${memoText}</div></div>`;
+     const memoText=escapeHtml(q.text||'メモ');
+     return `<div class="mon-q memo"><div class="mon-q-header" title="${memoText}">${memoText}</div></div>`;
    }
    const selected=i===selectedCue;
    const summary=(q.runs||[]).map(runSummary).join(' ｜ ');
@@ -1442,11 +1613,11 @@ function renderMonitorCueBrowser(){
        const state=runLiveState(r,st,+seek.value||0);
        const cur=runPositionAt(r,st,+seek.value||0);
        const clearance=hangingBottomMM(d,cur);
-       return `<div>${r.device}｜${d?.itemName||'（吊物なし）'}</div><div>${positionDisplayText(d,st)}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${positionDisplayText(d,+r.target)}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${state.label}</div><div>${d?.type==='constant'?167:Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?0:(+r.acc||0)}</div><div>${d?.type==='constant'?0:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?167:Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?0:(+r.acc||0)}</div><div>${d?.type==='constant'?0:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
      }).join('');
      detail=`<div class="mon-run-grid">${cells}</div>`;
    }
-   return `<div class="mon-q ${selected?'selected':''}" data-moncue="${i}"><div class="mon-q-header"><span class="mon-q-num">${formatCueNumber(q.number)||'000.00'}</span><span class="mon-q-name">${q.name}</span><span class="mon-q-summary">${summary}</span></div>${detail}</div>`;
+   return `<div class="mon-q ${selected?'selected':''}" data-moncue="${i}"><div class="mon-q-header"><span class="mon-q-num">${formatCueNumber(q.number)||'000.00'}</span><span class="mon-q-name">${escapeHtml(q.name||'')}</span><span class="mon-q-summary">${escapeHtml(summary)}</span></div>${detail}</div>`;
  }).join('');
  box.querySelectorAll('[data-moncue]').forEach(el=>el.onclick=()=>selectCue(+el.dataset.moncue));
  const sel=box.querySelector('.mon-q.selected');if(sel)sel.scrollIntoView({block:'nearest'});
@@ -1474,23 +1645,39 @@ function renderCueList(){
    cueList.appendChild(d);
  });
 }
+function labelIndexForRun(d,r){
+ if(!d || !Array.isArray(d.labels))return -1;
+ const mode=r.targetMode;
+ if(!mode || mode==='direct')return -1;
+ const candidates=[];
+ d.labels.forEach((l,i)=>{if(l.name===mode)candidates.push(i)});
+ if(!candidates.length)return -1;
+ if(candidates.length===1)return candidates[0];
+ const target=+r.target;
+ return candidates.reduce((best,i)=>Math.abs(+d.labels[i].pos-target)<Math.abs(+d.labels[best].pos-target)?i:best,candidates[0]);
+}
 function syncRunTargetFromLabel(r){
  const d=dev(r.device);if(!d)return;
  if(r.targetMode && r.targetMode!=='direct'){
-   const l=d.labels.find(x=>x.name===r.targetMode);
-   if(l)r.target=+l.pos; else r.targetMode='direct';
+   const i=labelIndexForRun(d,r);
+   if(i>=0)r.target=+d.labels[i].pos; else r.targetMode='direct';
  }
 }
 function inferRunTargetMode(r){
  const d=dev(r.device);if(!d)return 'direct';
- if(r.targetMode)return r.targetMode;
+ if(r.targetMode){
+   if(r.targetMode==='direct')return 'direct';
+   if(labelIndexForRun(d,r)>=0)return r.targetMode;
+   r.targetMode='direct';
+   return r.targetMode;
+ }
  const l=d.labels.find(x=>Math.abs(+x.pos-(+r.target))<0.001);
  r.targetMode=l?l.name:'direct';
  return r.targetMode;
 }
 function targetOptions(d,r){
- const mode=inferRunTargetMode(r);
- return d.labels.map(l=>`<option value="${l.name}" ${mode===l.name?'selected':''}>${l.name}　${Math.round(l.pos)}mm</option>`).join('')+`<option value="direct" ${mode==='direct'?'selected':''}>直入力</option>`;
+ const mode=inferRunTargetMode(r),selectedIndex=mode==='direct'?-1:labelIndexForRun(d,r);
+ return d.labels.map((l,i)=>`<option value="label:${i}" ${i===selectedIndex?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('')+`<option value="direct" ${mode==='direct'?'selected':''}>直入力</option>`;
 }
 function renderCueEditor(){
  const q=cues[selectedListIndex];
@@ -1498,7 +1685,7 @@ function renderCueEditor(){
  if(isMemoEntry(q)){
    cueEditor.innerHTML=`<div class="memo-editor">
      <h2>メモ</h2>
-     <textarea id="editMemoText" placeholder="例：機構チェック / 本番">${q.text||''}</textarea>
+     <textarea id="editMemoText" placeholder="例：機構チェック / 本番">${escapeHtml(q.text||'')}</textarea>
      <div class="memo-actions">
        <button id="moveMemoUp">上へ</button>
        <button id="moveMemoDown">下へ</button>
@@ -1530,39 +1717,41 @@ function renderCueEditor(){
    };
    return;
  }
- const starts=positionBeforeCue(selectedListIndex);
+ const starts=positionBeforeCue(selectedListIndex),counts=cueDeviceCounts(selectedListIndex);
  const rows=(q.runs||[]).map((r,ri)=>{
    const d=dev(r.device)||devices[0],fixed=d.type==='constant';
    const st=starts[r.device]??initialPosition(d);
    const dist=Math.abs((+r.target)-st);
-   const validation=validateRun(r,st);
-   const time=validation.ok?validation.total+(+r.delay||0):NaN;
+   const validation=(counts.get(String(r.device??''))||0)>1
+     ? {ok:false,msg:'同一Cue内で同じ機器が重複しています'}
+     : validateRun(r,st);
+   const time=validation.ok?validation.total:NaN;
    const trans2=r.use2&&!fixed?transitionDisplayTime(+r.speed||0,+r.speed2||0):0;
+   const duplicate=(counts.get(String(r.device??''))||0)>1;
    return `<tr class="${validation.ok?'':'invalid'}">
     <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
-    <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${x.id}" ${x.id===r.device?'selected':''}>${x.id}｜${x.itemName||'（吊物なし）'}</option>`).join('')}</select></td>
-    <td class="readonly">${positionDisplayText(d,starts[r.device]??initialPosition(d))}</td>
+    <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
+    <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d)))}</td>
     <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
-    <td><input class="target" data-ri="${ri}" data-f="target" type="number" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
+    <td><input class="target" data-ri="${ri}" data-f="target" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
     <td class="readonly">${Math.round(dist)}</td>
-    <td><input data-ri="${ri}" data-f="speed" type="number" value="${fixed?167:r.speed}" ${fixed?'disabled':''}></td>
-    <td class="readonly">${Number.isFinite(time)?time.toFixed(1):"ERR"}</td>
-    <td><input data-ri="${ri}" data-f="acc" type="number" step=".1" value="${fixed?0:r.acc}" ${fixed?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="dec" type="number" step=".1" value="${fixed?0:r.dec}" ${fixed?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="delay" type="number" step=".1" value="${r.delay||0}"></td>
+    <td><input data-ri="${ri}" data-f="speed" type="number" min="1" max="1500" value="${fixed?167:r.speed}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="time" type="number" min="0.1" step=".1" value="${Number.isFinite(time)?time.toFixed(1):''}" ${fixed||duplicate?'disabled':''} title="${fixed?'167 mm/s 固定':(duplicate?'同一Cueの機器重複を解消してください':'運転タイムを入力すると速度を逆算します（遅延は別計算）')}"></td>
+    <td><input data-ri="${ri}" data-f="acc" type="number" min="0" step=".1" value="${fixed?0:r.acc}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="dec" type="number" min="0" step=".1" value="${fixed?0:r.dec}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="delay" type="number" min="0" step=".1" value="${r.delay||0}"></td>
     <td><input data-ri="${ri}" data-f="use2" type="checkbox" ${r.use2?'checked':''} ${fixed?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="pos2" type="number" value="${r.pos2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
-    <td><input data-ri="${ri}" data-f="speed2" type="number" value="${r.speed2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="pos2" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.pos2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="speed2" type="number" min="1" max="1500" value="${r.speed2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
     <td><input class="readonly-derived" type="number" step=".1" value="${r.use2&&!fixed?trans2.toFixed(1):'0.0'}" readonly></td>
-    <td><button data-del="${ri}" style="width:100%">削除</button></td>
    </tr>`;
  }).join('');
- cueEditor.innerHTML=`<div class="q-block"><div class="q-header"><input class="q-number" id="editQNum" inputmode="decimal" placeholder="000.00" value="${formatCueNumber(q.number)||'000.00'}"><input class="q-name" id="editQName" value="${q.name}"><div class="q-actions"><button id="previewQ">断面で確認</button></div></div>
- <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
- <div id="cueValidation" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${e.device}: ${e.msg}</div>`).join('')}</div>
- <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${q.number}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
- <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:72px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"><col style="width:55px"></colgroup>
- <thead><tr><th>選択</th><th>機器 / 吊物</th><th>開始</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th>時間</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th><th></th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
+ cueEditor.innerHTML=`<div class="q-block"><div class="q-header"><input class="q-number" id="editQNum" inputmode="decimal" placeholder="000.00" value="${formatCueNumber(q.number)||'000.00'}"><input class="q-name" id="editQName" value="${escapeHtml(q.name||'')}"><div class="q-actions"><button id="previewQ">断面で確認</button></div></div>
+ <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><button id="deleteRows" class="danger" disabled>選択装置を削除</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
+ <div id="cueValidation" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${escapeHtml(e.device)}: ${escapeHtml(e.msg)}</div>`).join('')}</div>
+ <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${escapeHtml(q.number)}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
+ <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
+ <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>開始</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
  editQNum.oninput=e=>{pushUndoSnapshotForInput(`qnum:${selectedListIndex}`);q.number=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
  editQNum.onblur=e=>{
    const formatted=formatCueNumber(e.target.value);
@@ -1602,12 +1791,34 @@ function renderCueEditor(){
    save();
    if(selectedCue>=0)selectCue(selectedCue);else{renderCueList();renderCueEditor();renderMonitorCueBrowser();}
  };
- copyRows.onclick=()=>{const idx=[...cueEditor.querySelectorAll('[data-rowcheck]:checked')].map(x=>+x.dataset.rowcheck);runClipboard=idx.map(i=>deep(q.runs[i]))};
+ const selectedRunIndexes=()=>[...cueEditor.querySelectorAll('[data-rowcheck]:checked')].map(x=>+x.dataset.rowcheck).filter(Number.isInteger);
+ const updateRunSelectionActions=()=>{const del=document.getElementById('deleteRows');if(del)del.disabled=selectedRunIndexes().length===0};
+ copyRows.onclick=()=>{const idx=selectedRunIndexes();runClipboard=idx.map(i=>deep(q.runs[i]))};
  pasteRows.onclick=()=>{if(!runClipboard.length)return;pushUndoSnapshot();q.runs.push(...deep(runClipboard));save();renderCueEditor()};
+ deleteRows.onclick=()=>{const idx=selectedRunIndexes();if(!idx.length)return;pushUndoSnapshot();idx.sort((a,b)=>b-a).forEach(i=>q.runs.splice(i,1));save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation()};
+ cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.onchange=()=>{const all=document.getElementById('selectAllRuns');const checks=[...cueEditor.querySelectorAll('[data-rowcheck]')];if(all)all.checked=checks.length>0&&checks.every(x=>x.checked);updateRunSelectionActions()});
+ const selectAll=document.getElementById('selectAllRuns');if(selectAll)selectAll.onchange=()=>{cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.checked=selectAll.checked);updateRunSelectionActions()};
+ updateRunSelectionActions();
  addRun.onclick=()=>{pushUndoSnapshot();const d=dev('B1')||devices[0];q.runs.push({device:d.id,targetMode:d.labels[0]?.name||'direct',target:d.labels[0]?.pos??d.machineMax,speed:1000,acc:2,dec:2,delay:0,use2:false,pos2:'',speed2:''});save();renderCueEditor()};
  editPosModeToggle.onclick=togglePositionDisplayMode;
- cueEditor.querySelectorAll('[data-ri][data-f]').forEach(el=>el.onchange=()=>{pushUndoSnapshot();const ri=+el.dataset.ri,f=el.dataset.f,r=q.runs[ri];if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?167:(r.speed||1000);r.acc=d.type==='constant'?0:(r.acc||2);r.dec=d.type==='constant'?0:(r.dec||2)}else if(f==='targetSelect'){r.targetMode=el.value;if(el.value!=='direct'){const d=dev(r.device),l=d.labels.find(x=>x.name===el.value);if(l)r.target=+l.pos}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation()});
- cueEditor.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{pushUndoSnapshot();q.runs.splice(+b.dataset.del,1);save();renderCueEditor()});
+ cueEditor.querySelectorAll('[data-ri][data-f]').forEach(el=>el.onchange=()=>{
+   const ri=+el.dataset.ri,f=el.dataset.f,r=q.runs[ri];
+   if(f==='time'){
+     const d=dev(r.device);
+     const startsNow=positionBeforeCue(selectedListIndex);
+     const st=startsNow[r.device]??initialPosition(d);
+     const solved=solvePrimarySpeedFromTime(r,st,+el.value);
+     if(!solved.ok){alert(solved.msg);renderCueEditor();return;}
+     pushUndoSnapshot();
+     r.speed=solved.speed;
+     save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
+     if(!solved.exact)alert(`指定した ${(+el.value).toFixed(1)} 秒は実機速度では一致しません。\n最も近い ${solved.shown.toFixed(1)} 秒（${solved.speed} mm/s）に設定しました。`);
+     return;
+   }
+   pushUndoSnapshot();
+   if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?167:(r.speed||1000);r.acc=d.type==='constant'?0:(r.acc||2);r.dec=d.type==='constant'?0:(r.dec||2)}else if(f==='targetSelect'){const d=dev(r.device);if(el.value==='direct'){r.targetMode='direct'}else if(el.value.startsWith('label:')){const li=+el.value.slice(6),l=d?.labels?.[li];if(l){r.targetMode=l.name;r.target=+l.pos}else r.targetMode='direct'}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;
+   save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
+ });
  renumberOpenBtn.onclick=()=>{renumberBox.style.display=renumberBox.style.display==='none'?'grid':'none'};
  runRenumber.onclick=()=>{pushUndoSnapshot();let a=Math.max(1,+rnStartIndex.value||1)-1,b=Math.min(cues.length,+rnEndIndex.value||cues.length)-1;if(b<a)[a,b]=[b,a];const s=parseFloat(rnStartNumber.value)||0,step=parseFloat(rnStep.value)||1;let n=0;for(let i=a;i<=b;i++){if(isMemoEntry(cues[i]))continue;cues[i].number=(s+n*step).toFixed(2).padStart(6,'0');n++;}save();renderCueList();renderCueEditor();renderMonitorCueBrowser()};
 }
@@ -1631,7 +1842,7 @@ pasteCueBtn.onclick=()=>{if(!cueClipboard)return;pushUndoSnapshot();const c=deep
 renumberOpenBtn.onclick=()=>{document.querySelector('[data-tab="cue"]').click();setTimeout(()=>{const b=document.getElementById('renumberBox');if(b)b.style.display='grid'},0)};
 
 function initialLabelOptions(d,current){
- let html=d.labels.map(l=>`<option value="${l.pos}" ${Math.abs(+l.pos-(+current))<0.001?'selected':''}>${l.name}　${Math.round(l.pos)}mm</option>`).join('');
+ let html=d.labels.map(l=>`<option value="${l.pos}" ${Math.abs(+l.pos-(+current))<0.001?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('');
  const matched=d.labels.some(l=>Math.abs(+l.pos-(+current))<0.001);
  html+=`<option value="direct" ${matched?'':'selected'}>直接入力</option>`;
  return html;
@@ -1642,9 +1853,9 @@ function renderInitialBulk(){
  devices.forEach((d,i)=>{
   const p=initialPosition(d);
   const tr=document.createElement('tr');
-  tr.innerHTML=`<td class="devcol">${d.id}</td><td class="itemcol">${d.itemName||'—'}</td>
+  tr.innerHTML=`<td class="devcol">${escapeHtml(d.id)}</td><td class="itemcol">${escapeHtml(d.itemName||'—')}</td>
     <td class="labelcol"><select data-bulk-i="${i}" data-bulk-k="label">${initialLabelOptions(d,p)}</select></td>
-    <td class="mmcol"><input data-bulk-i="${i}" data-bulk-k="pos" type="number" value="${Math.round(p)}"></td>
+    <td class="mmcol"><input data-bulk-i="${i}" data-bulk-k="pos" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${Math.round(p)}"></td>
     <td class="rangecol">${Math.round(d.machineMin)} ～ ${Math.round(d.machineMax)} mm</td>`;
   body.appendChild(tr);
  });
@@ -1663,7 +1874,13 @@ function renderInitialBulk(){
 }
 function renderDeviceList(){
  deviceList.innerHTML='';
- devices.forEach(d=>{const b=document.createElement('button');b.className='device-btn '+(d.id===selectedDevice?'active':'');b.innerHTML=`<span>${d.id}</span><small>${d.itemName||''}</small>`;b.onclick=()=>{selectedDevice=d.id;renderDeviceList();renderSettings()};deviceList.appendChild(b)});
+ devices.forEach(d=>{
+   const b=document.createElement('button');b.className='device-btn '+(d.id===selectedDevice?'active':'');
+   const name=document.createElement('span');name.textContent=d.id;
+   const item=document.createElement('small');item.textContent=d.itemName||'';
+   b.append(name,item);
+   b.onclick=()=>{selectedDevice=d.id;renderDeviceList();renderSettings()};deviceList.appendChild(b);
+ });
 }
 function hangingPackage(d){
  return {
@@ -1719,12 +1936,15 @@ function renderSettings(){
  else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
  else specialNotice.innerHTML='';
  labelBody.innerHTML='';
- for(let i=0;i<10;i++){const l=d.labels[i]||{name:'',pos:''};const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-k="name" value="${l.name}"></td><td><input data-k="pos" type="number" value="${l.pos}"></td>`;labelBody.appendChild(tr)}
+ for(let i=0;i<10;i++){const l=d.labels[i]||{name:'',pos:''};const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-k="name" value="${escapeHtml(l.name)}"></td><td><input data-k="pos" type="number" value="${escapeHtml(l.pos)}"></td>`;labelBody.appendChild(tr)}
  refreshHangingClipboardUI();
 }
 function syncSettingsFromUI(){
  const d=dev(selectedDevice);if(!d)return;
- d.itemName=s_item.value;d.toolHeight=+s_height.value||0;d.hangOffset=+s_hang.value||0;
+ d.itemName=s_item.value;
+ d.toolHeight=Math.max(0,+s_height.value||0);
+ d.hangOffset=Math.max(0,+s_hang.value||0);
+ s_height.value=d.toolHeight;s_hang.value=d.hangOffset;
  d.displayColor=s_color.value;d.displayOpacity=(+s_opacity.value||100)/100;
  const arr=[];document.querySelectorAll('#labelBody tr').forEach(tr=>{const n=tr.querySelector('[data-k="name"]').value.trim(),p=tr.querySelector('[data-k="pos"]').value;if(n&&p!=='')arr.push({name:n,pos:+p})});d.labels=arr;
  scheduleSave();renderDeviceList();renderInitialBulk();renderMonitorCueBrowser();renderStage(+seek.value||0);
@@ -1804,7 +2024,12 @@ setEmptyUpper.onclick=()=>{
 function syncInitialFromTable(){
  const body=document.getElementById('initialBulkBody');
  body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>{
-   const i=+input.dataset.bulkI,v=+input.value;if(Number.isFinite(v))devices[i].initialPosition=v;
+   const i=+input.dataset.bulkI,d=devices[i],v=+input.value;
+   if(!d || !Number.isFinite(v))return;
+   const lo=+d.machineMin,hi=+d.machineMax;
+   const clamped=(Number.isFinite(lo)&&Number.isFinite(hi))?Math.max(lo,Math.min(hi,v)):v;
+   d.initialPosition=clamped;
+   if(clamped!==v)input.value=Math.round(clamped);
  });
  scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
 }
@@ -1908,8 +2133,7 @@ importJsonFile.onchange=async e=>{
  if(!file)return;
  try{
    const obj=JSON.parse(await file.text());
-   importProjectJson(obj);
-   clearEditHistory();
+   if(importProjectJson(obj))clearEditHistory();
  }catch(err){
    console.error(err);
    alert('JSONの読み込みに失敗しました。ファイル内容を確認してください。');
@@ -1917,7 +2141,7 @@ importJsonFile.onchange=async e=>{
  e.target.value='';
 };
 
-load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
+load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;const lo=+d.machineMin,hi=+d.machineMax;if(Number.isFinite(lo)&&Number.isFinite(hi))d.initialPosition=Math.max(lo,Math.min(hi,+d.initialPosition));if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
 </script>
 </body>
 </html>
