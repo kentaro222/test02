@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v56</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v58</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -88,6 +88,10 @@ button,input,select{font:inherit}
 .run-table input,.run-table select{width:100%;background:#303437;color:#fff;border:1px solid #888;padding:4px}
 .run-table .target{color:#3de7e7}
 .run-table .readonly{background:#292c2e;color:#bbb}
+.run-table .run-direction{background:#292c2e;font-weight:800;text-align:center;font-size:16px}
+.direction-up{color:#55d47b!important}
+.direction-down{color:#ff8fb3!important}
+.mon-direction{font-weight:900;text-align:center;font-size:15px}
 .add-row{margin-top:5px;background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 12px}
 .editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
 .editor-toolbar button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 10px}
@@ -185,7 +189,7 @@ button,input,select{font:inherit}
   .editor-toolbar{gap:4px}
   .editor-toolbar button{min-height:34px;padding:5px 7px;font-size:11px}
   .renumber-box{grid-template-columns:repeat(2,minmax(120px,1fr));gap:6px}
-  .run-table{font-size:11px;min-width:1290px}
+  .run-table{font-size:11px;min-width:1330px}
   .run-table thead th{position:sticky;top:0;z-index:4}
   .run-table th:first-child,.run-table td:first-child{position:sticky;left:0;z-index:3}
   .run-table th:nth-child(2),.run-table td:nth-child(2){position:sticky;left:34px;z-index:3;box-shadow:2px 0 3px rgba(0,0,0,.28)}
@@ -272,7 +276,7 @@ button,input,select{font:inherit}
 .mon-q.selected .mon-q-num{color:#50ddff}
 .mon-q-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mon-q-summary{font-size:11px;color:#b7c1c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mon-run-grid{display:grid;grid-template-columns:200px 72px 80px 78px 72px 92px 64px 56px 56px 56px 68px 68px 64px;gap:1px;background:#5c666a;border-top:1px solid #5c666a;font-size:11px;min-width:1060px}
+.mon-run-grid{display:grid;grid-template-columns:200px 72px 80px 40px 72px 78px 92px 64px 56px 56px 56px 68px 68px 64px;gap:1px;background:#5c666a;border-top:1px solid #5c666a;font-size:11px;min-width:1110px}
 .mon-run-grid>div{background:#303639;padding:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mon-run-grid .mh{background:#006fae;font-weight:700}
 .mon-current{font-variant-numeric:tabular-nums;font-weight:800;color:#8ee7ff}
@@ -335,22 +339,33 @@ button,input,select{font:inherit}
   .monitor-cue-head>*{flex:0 0 auto}
   .cue-seek{flex:0 0 260px;min-width:260px;max-width:260px}
   .monitor-cue-browser{flex:1 1 auto;min-height:0;min-width:0;width:100%;max-width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
-  .mon-q.selected{min-width:1060px}
+  .mon-q.selected{min-width:1110px}
   .mon-q.selected .mon-q-header{position:static}
-  .mon-run-grid{width:max-content;min-width:1060px}
+  .mon-run-grid{width:max-content;min-width:1110px}
 
   .cue-layout{width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-rows:188px minmax(0,1fr);overflow:hidden}
   .cue-left{min-width:0;max-width:100%;min-height:0;overflow:hidden}
   .cue-list{min-width:0;max-width:100%;min-height:0;overflow-y:scroll;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   .cue-main{min-width:0;max-width:100%;min-height:0;width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
   .q-block{min-width:0;max-width:none}
-  .run-table{width:1290px;min-width:1290px;max-width:none}
+  .run-table{width:1330px;min-width:1330px;max-width:none}
 
   .settings-shell{min-width:0;max-width:100%;width:100%;overflow:hidden}
   .settings-detail{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
   .initial-page{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
   .initial-table-wrap{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
 }
+
+/* v58: coarse-pointer landscape startup layout. Keep the tab row visible even when utility controls are wide. */
+html.tablet-landscape .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+html.tablet-landscape .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
+html.tablet-landscape .tab-btn{width:100%;height:36px;min-width:0;max-width:none;flex:none;padding:0 3px;font-size:10px}
+html.tablet-landscape .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+html.tablet-landscape .top-utility-strip>*{flex:0 0 auto}
+html.tablet-landscape .history-actions,html.tablet-landscape .top-file-actions{margin-left:0;gap:4px}
+html.tablet-landscape .history-actions button,html.tablet-landscape .file-btn{height:36px;font-size:10px;padding:0 7px}
+html.tablet-landscape .save-state,html.tablet-landscape .app-title{display:none}
+html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 
 </style>
 </head>
@@ -378,7 +393,7 @@ button,input,select{font:inherit}
       <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
       <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v56</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v58</div>
   </div>
 </div>
 
@@ -1865,14 +1880,16 @@ function renderMonitorCueBrowser(){
    const summary=(q.runs||[]).map(runSummary).join(' ｜ ');
    let detail='';
    if(selected){
-     const hdr=['機器 / 吊物','開始','現在地','床まで','目標','運転状態','速度','加速','減速','遅延','2位置','2速度','2加減'];
+     const hdr=['機器 / 吊物','開始','現在地','方向','目標','床まで','運転状態','速度','加速','減速','遅延','2位置','2速度','2加減'];
      const cells=hdr.map(x=>`<div class="mh">${x}</div>`).join('')+(q.runs||[]).map((r,ri)=>{
        const d=dev(r.device);const st=starts[r.device]??initialPosition(d);
        const t2=r.use2&&d?.type!=='constant'?transitionDisplayTime(+r.speed||0,+r.speed2||0):null;
        const state=runLiveState(r,st,+seek.value||0);
        const cur=runPositionAt(r,st,+seek.value||0);
        const clearance=hangingBottomMM(d,cur);
-       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,startLabels[r.device]))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+       const direction=(+r.target)>st?'▲':(+r.target)<st?'▼':'';
+       const directionClass=direction==='▲'?'direction-up':direction==='▼'?'direction-down':'';
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,startLabels[r.device]))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-direction ${directionClass}" title="運転方向">${direction}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
      }).join('');
      detail=`<div class="mon-run-grid">${cells}</div>`;
    }
@@ -1981,6 +1998,7 @@ function renderCueEditor(){
    const d=dev(r.device)||devices[0],fixed=d.type==='constant';
    const st=starts[r.device]??initialPosition(d);
    const dist=Math.abs((+r.target)-st);
+   const direction=(+r.target)>st?'▲':(+r.target)<st?'▼':'';
    const validation=(counts.get(String(r.device??''))||0)>1
      ? {ok:false,msg:'同一Cue内で同じ機器が重複しています'}
      : validateRun(r,st);
@@ -1991,6 +2009,7 @@ function renderCueEditor(){
     <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
     <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
     <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d),startLabels[r.device]))}</td>
+    <td class="run-direction ${direction==='▲'?'direction-up':direction==='▼'?'direction-down':''}" title="運転方向">${direction}</td>
     <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
     <td><input class="target" data-ri="${ri}" data-f="target" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
     <td class="readonly">${Math.round(dist)}</td>
@@ -2009,8 +2028,8 @@ function renderCueEditor(){
  <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><button id="deleteRows" class="danger" disabled>選択装置を削除</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
  <div id="cueValidation" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${escapeHtml(e.device)}: ${escapeHtml(e.msg)}</div>`).join('')}</div>
  <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${escapeHtml(q.number)}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
- <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
- <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>開始</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
+ <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:40px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
+ <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>現在地</th><th>方向</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
  editQNum.oninput=e=>{pushUndoSnapshotForInput(`qnum:${selectedListIndex}`);q.number=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
  editQNum.onblur=e=>{
    const formatted=formatCueNumber(e.target.value);
@@ -2349,12 +2368,22 @@ calcA.addEventListener('input',updateSimpleCalc);
 calcB.addEventListener('input',updateSimpleCalc);
 calcOp.addEventListener('change',updateSimpleCalc);
 
+function syncTabletLandscapeClass(){
+ const coarse=window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints>0;
+ const landscape=window.innerWidth>window.innerHeight;
+ document.documentElement.classList.toggle('tablet-landscape',!!(coarse&&landscape));
+}
+syncTabletLandscapeClass();
+window.addEventListener('orientationchange',()=>setTimeout(()=>{syncTabletLandscapeClass();if(monitor.classList.contains('active'))renderStage(+seek.value||0)},80));
+window.addEventListener('pageshow',()=>setTimeout(syncTabletLandscapeClass,0));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',syncTabletLandscapeClass);
+
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
  if(b.dataset.tab==='monitor')setTimeout(()=>{renderMonitorCueBrowser();renderStage(+seek.value||0)},0);
  if(b.dataset.tab==='initial')renderInitialBulk();
 });
-window.addEventListener('resize',()=>{if(monitor.classList.contains('active'))renderStage(+seek.value||0)});
+window.addEventListener('resize',()=>{syncTabletLandscapeClass();if(monitor.classList.contains('active'))renderStage(+seek.value||0)});
 csvInitBtn.onclick=()=>csvInitFile.click();
 csvInitFile.onchange=async e=>{
  const file=e.target.files?.[0];
