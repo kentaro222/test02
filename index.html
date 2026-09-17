@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v60</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v61</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -368,6 +368,7 @@ html.tablet-landscape .save-state,html.tablet-landscape .app-title{display:none}
 html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 
 /* v60: consolidated I/O sheet + share code */
+/* v61: consecutive GO runtime mixing in section monitor */
 .file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
 .io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
 .io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
@@ -394,7 +395,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     <div class="top-file-actions">
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v60</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v61</div>
   </div>
 </div>
 
@@ -569,6 +570,7 @@ let devices=deep(BASE_DEVICES);
 let selectedDevice='B1';
 let selectedCue=2;
 let running=false, startStamp=0, raf=null;
+let liveSession=null;
 let cues=[
  {number:"001.00",name:"新規キュー",runs:[]}
 ];
@@ -1639,26 +1641,22 @@ function updateMonitorRunLive(t=0){
  if(!box)return;
  const q=cues[selectedCue];
  if(!q)return;
- const starts=positionBeforeCue(selectedCue);
+ const useRuntime=!!(liveSession&&liveSession.latestCueIndex===selectedCue);
+ const virtualNow=useRuntime?liveVirtualNow():null;
+ const runtimeP=useRuntime?runtimePositions(virtualNow):null;
+ const starts=useRuntime?null:positionBeforeCue(selectedCue);
  (q.runs||[]).forEach((r,ri)=>{
-   const st=starts[r.device]??initialPosition(dev(r.device));
-   const pos=runPositionAt(r,st,t);
-   const state=runLiveState(r,st,t);
+   const d=dev(r.device);
+   const entry=useRuntime?liveSession.latestEntries?.[ri]:null;
+   const st=entry?.start??starts?.[r.device]??initialPosition(d);
+   const pos=useRuntime?(runtimeP?.[r.device]??st):runPositionAt(r,st,t);
+   const state=useRuntime?runtimeEntryState(entry,virtualNow):runLiveState(r,st,t);
    const posEl=box.querySelector(`[data-live-pos="${ri}"]`);
    const clearEl=box.querySelector(`[data-live-clear="${ri}"]`);
    const stateEl=box.querySelector(`[data-live-state="${ri}"]`);
-   if(posEl){
-     posEl.textContent=`${Math.round(pos)} mm`;
-     posEl.classList.toggle('second',state.second);
-   }
-   if(clearEl){
-     const clearance=hangingBottomMM(dev(r.device),pos);
-     clearEl.textContent=clearance==null?'—':`${Math.round(clearance)} mm`;
-   }
-   if(stateEl){
-     stateEl.textContent=state.label;
-     stateEl.className=`mon-state ${state.cls}`;
-   }
+   if(posEl){posEl.textContent=`${Math.round(pos)} mm`;posEl.classList.toggle('second',state.second)}
+   if(clearEl){const clearance=hangingBottomMM(d,pos);clearEl.textContent=clearance==null?'—':`${Math.round(clearance)} mm`}
+   if(stateEl){stateEl.textContent=state.label;stateEl.className=`mon-state ${state.cls}`}
  });
 }
 
@@ -1669,6 +1667,116 @@ function positionsAt(index,t){
    p[r.device]=runPositionAt(r,starts[r.device],t);
  }
  return p;
+}
+
+// Runtime engine used only by the section monitor. Normal Cue editing still uses
+// the planned "previous Cue completed" positions above. While a Cue is RUNNING,
+// another GO fires the next playable Cue into this runtime state.
+function liveVirtualNow(realNow=performance.now()){
+ if(!liveSession)return realNow;
+ const anchor=liveSession.pauseStartedReal==null?realNow:liveSession.pauseStartedReal;
+ return anchor-liveSession.pausedTotal;
+}
+function runtimeMotionPosition(m,virtualNow){
+ if(!m)return null;
+ if(virtualNow<m.takeoverStamp){
+   return m.previous?runtimeMotionPosition(m.previous,virtualNow):m.prePosition;
+ }
+ if(m.hold)return m.start;
+ return runPositionAt(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
+}
+function runtimeMotionHasWork(m,virtualNow){
+ if(!m)return false;
+ if(virtualNow<m.takeoverStamp)return true; // delay / scheduled takeover still pending
+ if(m.hold)return false;
+ return virtualNow<m.endStamp-0.01;
+}
+function runtimePositions(virtualNow=liveVirtualNow()){
+ if(!liveSession)return null;
+ const p={...liveSession.basePositions};
+ liveSession.motions.forEach((m,id)=>{p[id]=runtimeMotionPosition(m,virtualNow)});
+ return p;
+}
+function runtimeDeviceActive(id,virtualNow=liveVirtualNow()){
+ if(!liveSession)return false;
+ return runtimeMotionHasWork(liveSession.motions.get(id),virtualNow);
+}
+function runtimeSessionHasWork(virtualNow=liveVirtualNow()){
+ if(!liveSession)return false;
+ for(const m of liveSession.motions.values())if(runtimeMotionHasWork(m,virtualNow))return true;
+ return false;
+}
+function buildRuntimeMotion(r,prePosition,cueGoStamp,previousMotion=null){
+ const sourceRun=deep(r);
+ syncRunTargetFromLabel(sourceRun);
+ const delay=Number(sourceRun.delay??0);
+ if(!Number.isFinite(delay)||delay<0)return {ok:false,msg:'ディレイは0秒以上にしてください'};
+ const takeoverStamp=cueGoStamp+delay*1000;
+ const start=previousMotion?runtimeMotionPosition(previousMotion,takeoverStamp):prePosition;
+ if(!Number.isFinite(start))return {ok:false,msg:'現在地を確認してください'};
+ const target=+sourceRun.target;
+ if(!Number.isFinite(target))return {ok:false,msg:'目的地を確認してください'};
+ const effectiveRun={...sourceRun,delay:0};
+ // In a consecutive GO the actual takeover position can already equal the target.
+ // Treat that as a completed command instead of rejecting the whole Cue.
+ if(Math.abs(target-start)<=1e-9){
+   const motion={sourceRun,run:effectiveRun,prePosition,start,takeoverStamp,endStamp:takeoverStamp,previous:previousMotion,hold:true};
+   return {ok:true,motion,start,total:delay};
+ }
+ const v=validateRun(effectiveRun,start);
+ if(!v.ok)return {ok:false,msg:v.msg};
+ const endStamp=takeoverStamp+v.total*1000;
+ const motion={sourceRun,run:effectiveRun,prePosition,start,takeoverStamp,endStamp,previous:previousMotion,hold:false};
+ return {ok:true,motion,start,total:delay+v.total};
+}
+function prepareRuntimeCue(index,cueGoStamp,session=null){
+ const q=cues[index];
+ if(!q||isMemoEntry(q))return {ok:false,errors:[{device:'Cue',msg:'再生できるCueではありません'}]};
+ const counts=cueDeviceCounts(index),errors=[],entries=[];
+ const basePositions=session?runtimePositions(cueGoStamp):positionBeforeCue(index);
+ (q.runs||[]).forEach((r,ri)=>{
+   const id=String(r.device??'');
+   if((counts.get(id)||0)>1){errors.push({index:ri,device:id,msg:'同一Cue内で同じ機器が重複しています'});return}
+   const d=dev(id);if(!d){errors.push({index:ri,device:id||'?',msg:'機器を確認してください'});return}
+   const pre=basePositions[id]??initialPosition(d);
+   const previous=session?.motions.get(id)||null;
+   const built=buildRuntimeMotion(r,pre,cueGoStamp,previous);
+   if(!built.ok){errors.push({index:ri,device:id,msg:built.msg});return}
+   entries[ri]={...built,device:id,sourceRun:built.motion.sourceRun};
+ });
+ const latestDuration=Math.max(0.1,...entries.filter(Boolean).map(x=>x.total||0));
+ return {ok:!errors.length,errors,entries,basePositions,latestDuration};
+}
+function commitRuntimeCue(index,cueGoStamp,prep,session=null){
+ const s=session||{
+   basePositions:{...prep.basePositions},motions:new Map(),pausedTotal:0,pauseStartedReal:null,
+   latestCueIndex:index,latestCueGoStamp:cueGoStamp,latestEntries:[],latestDuration:0.1
+ };
+ prep.entries.forEach(e=>{if(e)s.motions.set(e.device,e.motion)});
+ s.latestCueIndex=index;
+ s.latestCueGoStamp=cueGoStamp;
+ s.latestEntries=prep.entries;
+ s.latestDuration=prep.latestDuration;
+ return s;
+}
+function runtimeEntryState(entry,virtualNow){
+ if(!entry)return {label:'—',cls:'wait',second:false};
+ const m=entry.motion;
+ if(virtualNow<m.takeoverStamp){
+   const priorMoving=m.previous&&runtimeMotionHasWork(m.previous,virtualNow);
+   return {label:priorMoving?'前Q継続 / ディレイ':'ディレイ',cls:priorMoving?'run':'wait',second:false};
+ }
+ if(m.hold)return {label:'完了',cls:'done',second:false};
+ return runLiveState(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
+}
+function showMonitorRuntimeErrors(errors){
+ monitorValidation.textContent=errors?.length?'⚠ '+errors.map(e=>`${e.device}: ${e.msg}`).join(' / '):'';
+}
+function syncMonitorHeaderForCue(index,duration,value=0){
+ const q=cues[index];if(!q)return;
+ nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;
+ seek.max=Math.max(0.1,duration||0.1).toFixed(2);seek.value=Math.max(0,value||0);
+ monitorClock.textContent=(+seek.value||0).toFixed(1)+' s';
 }
 function stageLayout(width){
  // 実図面ベースの前後寸法（右＝舞台前、左＝舞台奥）
@@ -1717,7 +1825,8 @@ function renderStage(t=0){
  sizeStageCanvas();
  const w=c.clientWidth,h=c.clientHeight;
  if(!w||!h)return;
- const p=positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
+ const runtimeNow=liveSession?liveVirtualNow():null;
+ const p=liveSession?runtimePositions(runtimeNow):positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
  const stageStartState=positionStateBeforeCue(selectedCue);
  const activeCue=cues[selectedCue];
  const preferredLabelForDevice=id=>{
@@ -1746,7 +1855,7 @@ function renderStage(t=0){
  c.appendChild(proc);
  devices.forEach((d,i)=>{
   const x=xMap[d.id];
-  const active=(cues[selectedCue].runs||[]).some(r=>r.device===d.id);
+  const active=liveSession?runtimeDeviceActive(d.id,runtimeNow):(cues[selectedCue].runs||[]).some(r=>r.device===d.id);
   const dl=document.createElement('div');dl.className='dev-label';dl.style.left=x+'px';dl.textContent=d.id;c.appendChild(dl);
   const pos=p[d.id]??initialPosition(d),y=mmToY(pos,h);
 
@@ -1818,37 +1927,75 @@ function updateMonitorValidation(){
 function selectCue(i){
  const playable=closestPlayableIndex(Math.max(0,Math.min(cues.length-1,i)));
  if(playable<0)return;
- selectedCue=playable;selectedListIndex=playable;running=false;
+ running=false;cancelAnimationFrame(raf);liveSession=null;
+ selectedCue=playable;selectedListIndex=playable;
  const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
- nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;seek.max=dur.toFixed(2);seek.value=0;monitorClock.textContent='0.0 s';
+ syncMonitorHeaderForCue(selectedCue,dur,0);
  renderCueList();renderCueEditor();renderMonitorCueBrowser();renderStage(0);updateMonitorValidation();
 }
 function selectListItem(i){
  selectedListIndex=Math.max(0,Math.min(cues.length-1,i));
- running=false;cancelAnimationFrame(raf);
+ running=false;cancelAnimationFrame(raf);liveSession=null;
  if(!isMemoEntry(cues[selectedListIndex]))selectedCue=selectedListIndex;
  renderCueList();renderCueEditor();renderMonitorCueBrowser();
  if(!isMemoEntry(cues[selectedListIndex])){
    const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
-   nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;
-   seek.max=dur.toFixed(2);seek.value=0;monitorClock.textContent='0.0 s';
+   syncMonitorHeaderForCue(selectedCue,dur,0);
    renderStage(0);updateMonitorValidation();
  }
 }
 function animationLoop(ts){
- if(!running)return;
- const elapsed=(ts-startStamp)/1000,dur=cueDuration(cues[selectedCue],selectedCue),t=Math.min(elapsed,dur);
- seek.value=t;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t);
- if(t>=dur){
+ if(!running||!liveSession)return;
+ const virtualNow=liveVirtualNow(ts);
+ const elapsed=Math.max(0,(virtualNow-liveSession.latestCueGoStamp)/1000);
+ const shown=Math.min(elapsed,liveSession.latestDuration);
+ seek.value=shown;monitorClock.textContent=shown.toFixed(1)+' s';renderStage(shown);
+ if(!runtimeSessionHasWork(virtualNow)){
    running=false;
-   const next=nextPlayableIndex(selectedCue);if(next>=0){setTimeout(()=>selectCue(next),120);}
+   const next=nextPlayableIndex(selectedCue);
+   if(next>=0)setTimeout(()=>{if(!running&&liveSession)selectCue(next)},120);
    return;
  }
  raf=requestAnimationFrame(animationLoop);
 }
-goBtn.onclick=()=>{if(!updateMonitorValidation())return;const t=+seek.value||0;startStamp=performance.now()-t*1000;running=true;raf=requestAnimationFrame(animationLoop)};
-pauseBtn.onclick=()=>{running=false;cancelAnimationFrame(raf)};
-stopBtn.onclick=()=>{running=false;cancelAnimationFrame(raf);seek.value=0;monitorClock.textContent='0.0 s';renderStage(0)};
+function startRuntimeCueFromCurrentSelection(){
+ if(!updateMonitorValidation())return false;
+ const offset=Math.max(0,+seek.value||0),realNow=performance.now(),cueGoStamp=realNow-offset*1000;
+ const prep=prepareRuntimeCue(selectedCue,cueGoStamp,null);
+ if(!prep.ok){showMonitorRuntimeErrors(prep.errors);return false}
+ liveSession=commitRuntimeCue(selectedCue,cueGoStamp,prep,null);
+ syncMonitorHeaderForCue(selectedCue,prep.latestDuration,offset);
+ showMonitorRuntimeErrors([]);running=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(animationLoop);return true;
+}
+function fireNextCueIntoRuntime(){
+ const next=nextPlayableIndex(selectedCue);if(next<0)return false;
+ const virtualNow=liveVirtualNow();
+ const prep=prepareRuntimeCue(next,virtualNow,liveSession);
+ if(!prep.ok){showMonitorRuntimeErrors(prep.errors);return false}
+ liveSession=commitRuntimeCue(next,virtualNow,prep,liveSession);
+ selectedCue=next;selectedListIndex=next;
+ syncMonitorHeaderForCue(next,prep.latestDuration,0);
+ showMonitorRuntimeErrors([]);
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();renderStage(0);
+ return true;
+}
+goBtn.onclick=()=>{
+ // GO during PAUSE resumes the current mixed runtime instead of advancing Cue.
+ if(liveSession&&!running&&liveSession.pauseStartedReal!=null){
+   const realNow=performance.now();liveSession.pausedTotal+=realNow-liveSession.pauseStartedReal;liveSession.pauseStartedReal=null;
+   running=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(animationLoop);return;
+ }
+ // Only a GO while already RUNNING fires the next Cue into the current motions.
+ if(running&&liveSession){fireNextCueIntoRuntime();return}
+ startRuntimeCueFromCurrentSelection();
+};
+pauseBtn.onclick=()=>{
+ if(!running)return;
+ running=false;cancelAnimationFrame(raf);
+ if(liveSession)liveSession.pauseStartedReal=performance.now();
+};
+stopBtn.onclick=()=>{running=false;cancelAnimationFrame(raf);liveSession=null;seek.value=0;monitorClock.textContent='0.0 s';renderStage(0);renderMonitorCueBrowser();updateMonitorValidation()};
+
 function setPositionDisplayMode(mode){
  positionDisplayMode=mode==='mm'?'mm':'label';
  const b=document.getElementById('posModeToggle');
@@ -1894,7 +2041,7 @@ function applyStageScaleMode(center=false){
 }
 stageScaleToggle.onclick=()=>{stageScaleMode=stageScaleMode==='fit'?'equal':'fit';applyStageScaleMode(true)};
 resetQ.onclick=()=>selectCue(selectedCue);prevQ.onclick=()=>{const i=prevPlayableIndex(selectedCue);if(i>=0)selectCue(i)};nextQ.onclick=()=>{const i=nextPlayableIndex(selectedCue);if(i>=0)selectCue(i)};
-seek.oninput=e=>{running=false;cancelAnimationFrame(raf);const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t)};
+seek.oninput=e=>{running=false;cancelAnimationFrame(raf);liveSession=null;const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t);renderMonitorCueBrowser()};
 
 
 function runSummary(r){
@@ -1915,15 +2062,20 @@ function renderMonitorCueBrowser(){
    let detail='';
    if(selected){
      const hdr=['機器 / 吊物','開始','現在地','方向','目標','床まで','運転状態','速度','加速','減速','遅延','2位置','2速度','2加減'];
+     const useRuntime=!!(liveSession&&liveSession.latestCueIndex===selectedCue);
+     const virtualNow=useRuntime?liveVirtualNow():null;
+     const runtimeP=useRuntime?runtimePositions(virtualNow):null;
      const cells=hdr.map(x=>`<div class="mh">${x}</div>`).join('')+(q.runs||[]).map((r,ri)=>{
-       const d=dev(r.device);const st=starts[r.device]??initialPosition(d);
+       const d=dev(r.device),entry=useRuntime?liveSession.latestEntries?.[ri]:null;
+       const st=entry?.start??starts[r.device]??initialPosition(d);
        const t2=r.use2&&d?.type!=='constant'?transitionDisplayTime(+r.speed||0,+r.speed2||0):null;
-       const state=runLiveState(r,st,+seek.value||0);
-       const cur=runPositionAt(r,st,+seek.value||0);
+       const state=useRuntime?runtimeEntryState(entry,virtualNow):runLiveState(r,st,+seek.value||0);
+       const cur=useRuntime?(runtimeP?.[r.device]??st):runPositionAt(r,st,+seek.value||0);
        const clearance=hangingBottomMM(d,cur);
        const direction=(+r.target)>st?'▲':(+r.target)<st?'▼':'';
        const directionClass=direction==='▲'?'direction-up':direction==='▼'?'direction-down':'';
-       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,startLabels[r.device]))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-direction ${directionClass}" title="運転方向">${direction}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+       const preferredStart=useRuntime?null:startLabels[r.device];
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,preferredStart))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-direction ${directionClass}" title="運転方向">${direction}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
      }).join('');
      detail=`<div class="mon-run-grid">${cells}</div>`;
    }
