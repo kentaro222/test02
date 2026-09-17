@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v58</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v59</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -356,7 +356,7 @@ button,input,select{font:inherit}
   .initial-table-wrap{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
 }
 
-/* v58: coarse-pointer landscape startup layout. Keep the tab row visible even when utility controls are wide. */
+/* v59: coarse-pointer landscape startup layout. Keep the tab row visible even when utility controls are wide. */
 html.tablet-landscape .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
 html.tablet-landscape .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
 html.tablet-landscape .tab-btn{width:100%;height:36px;min-width:0;max-width:none;flex:none;padding:0 3px;font-size:10px}
@@ -393,7 +393,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
       <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v58</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v59</div>
   </div>
 </div>
 
@@ -1372,9 +1372,11 @@ function solvePrimarySpeedFromTime(r,start,requestedTime){
    const shown=Math.round(total*10)/10;
    const displayDiff=Math.abs(shown-requestedShown);
    const rawDiff=Math.abs(total-requested);
+   // The console can have multiple integer speeds that produce the same displayed
+   // operation time because time is handled at 0.1 s resolution. In that case,
+   // prefer the fastest valid speed (実機の速度逆算仕様に合わせる).
    if(!best || displayDiff<best.displayDiff-1e-9 ||
-      (Math.abs(displayDiff-best.displayDiff)<1e-9 && rawDiff<best.rawDiff-1e-9) ||
-      (Math.abs(displayDiff-best.displayDiff)<1e-9 && Math.abs(rawDiff-best.rawDiff)<1e-9 && speed<best.speed)){
+      (Math.abs(displayDiff-best.displayDiff)<1e-9 && speed>best.speed)){
      best={speed,total,shown,displayDiff,rawDiff};
    }
  }
