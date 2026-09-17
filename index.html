@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v59</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v60</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -367,6 +367,14 @@ html.tablet-landscape .history-actions button,html.tablet-landscape .file-btn{he
 html.tablet-landscape .save-state,html.tablet-landscape .app-title{display:none}
 html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 
+/* v60: consolidated I/O sheet + share code */
+.file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
+.io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
+.io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
+.io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
+.share-box{display:none;margin-top:10px;padding:10px;border:1px solid #586164;border-radius:7px;background:#171c1e}.share-box.open{display:block}.share-box textarea{width:100%;min-height:145px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:9px;font:11px/1.45 monospace;word-break:break-all}.share-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.share-actions button{flex:1 1 140px;min-height:38px}.share-message{margin-top:7px;font-size:11px;color:#aeb9bd;line-height:1.5}.share-message.ok{color:#8fd6a4}.share-message.error{color:#ff8f98}.share-meta{font-size:11px;color:#aeb9bd}
+@media(max-width:560px){.io-grid{grid-template-columns:1fr}.io-modal{padding:6px}.io-sheet{max-height:calc(100dvh - 12px)}}
+
 </style>
 </head>
 <body>
@@ -384,18 +392,34 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="redoBtn" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ やり直す</button>
     </div>
     <div class="top-file-actions">
-      <button id="csvInitBtn" class="file-btn">装置CSV読込</button>
-      <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
-      <button id="exportDeviceCsvBtn" class="file-btn">装置CSV書出</button>
-      <button id="exportCueCsvBtn" class="file-btn">キューCSV書出</button>
-      <button id="exportJsonBtn" class="file-btn">JSON保存</button>
-      <button id="importJsonBtn" class="file-btn">JSON読込</button>
-      <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
-      <button id="resetProjectBtn" class="file-btn danger">全データリセット</button>
+      <button id="openIoBtn" class="file-btn primary-io">入出力</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v59</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v60</div>
   </div>
 </div>
+
+<div id="ioModal" class="io-modal" aria-hidden="true"><div class="io-sheet">
+  <div class="io-head"><h3>入出力</h3><div class="grow"></div><span class="share-meta">プロジェクト保存・CSV書出</span></div>
+  <div class="io-grid">
+    <button id="csvInitBtn" class="primary">装置CSV読込</button>
+    <button id="exportDeviceCsvBtn">装置CSV書出</button>
+    <button id="exportCueCsvBtn">キューCSV書出</button>
+    <button id="exportShareBtn" class="primary">共有コード書出</button>
+    <button id="importShareBtn">共有コード読込</button>
+    <button id="exportJsonBtn">JSON保存</button>
+    <button id="importJsonBtn">JSON読込</button>
+    <button id="resetProjectBtn" class="danger">全データリセット</button>
+  </div>
+  <div id="shareBox" class="share-box">
+    <div class="io-head"><strong id="shareTitle">共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
+    <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="SCUE1:... の共有コードをここへ貼り付け"></textarea>
+    <div class="share-actions"><button id="copyShareCode" class="primary">コードをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
+    <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
+  </div>
+  <button id="closeIoBtn" class="io-close">閉じる</button>
+  <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
+  <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
+</div></div>
 
 <section id="monitor" class="tab active">
   <div class="main-monitor">
@@ -760,7 +784,7 @@ function redoEdit(){
 function resetProjectData(){
  const ok=confirm(
    '装置設定・初期位置・Cue・メモをすべて初期化します。\n\n' +
-   'この操作は元に戻せません。必要なら先にJSON保存してください。\n\n' +
+   'この操作は元に戻せません。必要なら先にJSON保存または共有コード書出をしてください。\n\n' +
    '全データをリセットしますか？'
  );
  if(!ok)return;
@@ -1167,14 +1191,22 @@ function exportCueSheetCsv(){
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
 }
 
+function projectPayload(){
+ return {app:"stage-cue-simulator",formatVersion:1,savedAt:new Date().toISOString(),devices:deep(devices),cues:deep(cues)};
+}
+function bytesToBase64Url(bytes){let bin='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function base64UrlToBytes(text){let x=String(text||'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');while(x.length%4)x+='=';const bin=atob(x),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
+async function compressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
+async function decompressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
+async function makeShareCode(){const raw=new TextEncoder().encode(JSON.stringify(projectPayload()));if('CompressionStream' in window&&'DecompressionStream' in window){try{const packed=await compressBytes(raw);return {code:'SCUE1:G:'+bytesToBase64Url(packed),rawBytes:raw.length,codeBytes:packed.length,compressed:true}}catch(e){console.warn('share compression failed',e)}}return {code:'SCUE1:J:'+bytesToBase64Url(raw),rawBytes:raw.length,codeBytes:raw.length,compressed:false}}
+async function parseShareCode(text){const compact=String(text||'').trim().replace(/\s+/g,'');const m=/^SCUE1:([GJ]):([A-Za-z0-9_-]+)$/.exec(compact);if(!m)throw new Error('共有コードの形式が正しくありません');let bytes=base64UrlToBytes(m[2]);if(m[1]==='G'){if(!('DecompressionStream' in window))throw new Error('このブラウザは圧縮共有コードの読込に対応していません');bytes=await decompressBytes(bytes)}return JSON.parse(new TextDecoder().decode(bytes))}
+function openShareBox(mode){shareBox.classList.add('open');shareMessage.className='share-message';if(mode==='import'){shareTitle.textContent='共有コードを読込';shareMeta.textContent='';shareCode.value='';shareMessage.textContent='共有コードを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCode.focus(),0)}}
+async function showExportShareCode(){openShareBox('export');shareTitle.textContent='共有コードを書出';shareMeta.textContent='作成中…';shareCode.value='';shareMessage.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCode.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMeta.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessage.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessage.className='share-message ok'}catch(e){shareMeta.textContent='';shareMessage.textContent='共有コードの作成に失敗しました: '+e.message;shareMessage.className='share-message error'}}
+async function copyShareCodeText(){if(!shareCode.value.trim()){shareMessage.textContent='コピーする共有コードがありません。';shareMessage.className='share-message error';return}let ok=false;try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(shareCode.value);ok=true}}catch(e){}if(!ok){try{shareCode.focus();shareCode.select();shareCode.setSelectionRange(0,shareCode.value.length);ok=document.execCommand('copy')}catch(e){}}shareMessage.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄を選択して手動でコピーしてください。';shareMessage.className='share-message '+(ok?'ok':'error')}
+async function restoreShareCode(){const code=shareCode.value.trim();if(!code){shareMessage.textContent='共有コードを貼り付けてください。';shareMessage.className='share-message error';return}shareMessage.textContent='共有コードを確認しています…';shareMessage.className='share-message';try{const obj=await parseShareCode(code);const checked=validateProjectPayload(obj);if(!checked.ok)throw new Error(checked.msg);if(importProjectJson(obj,{silent:true})){clearEditHistory();shareMessage.textContent='共有コードからプロジェクトを復元しました。';shareMessage.className='share-message ok';shareMeta.textContent='読込完了'}}catch(e){shareMessage.textContent='共有コードを読み込めません: '+e.message;shareMessage.className='share-message error'}}
+
 function exportProjectJson(){
- const payload={
-   app:"stage-cue-simulator",
-   formatVersion:1,
-   savedAt:new Date().toISOString(),
-   devices:deep(devices),
-   cues:deep(cues)
- };
+ const payload=projectPayload();
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
  const a=document.createElement('a');
  const now=new Date();
@@ -1250,9 +1282,9 @@ function validateProjectPayload(obj){
  }
  return {ok:true};
 }
-function importProjectJson(obj){
+function importProjectJson(obj,{silent=false}={}){
  const checked=validateProjectPayload(obj);
- if(!checked.ok){alert('このJSONは読み込めません。\n'+checked.msg);return false;}
+ if(!checked.ok){if(!silent)alert('このJSONは読み込めません。\n'+checked.msg);return false;}
 
  const before={devices:deep(devices),cues:deep(cues),selectedCue,selectedListIndex,selectedDevice};
  try{
@@ -1270,13 +1302,13 @@ function importProjectJson(obj){
    renderInitialBulk();
    renderCueList();
    selectCue(0);
-   alert(saved?'JSONを読み込みました。':'JSONを読み込みましたが、ローカル保存に失敗しました。JSON書出でバックアップしてください。');
+   if(!silent)alert(saved?'JSONを読み込みました。':'JSONを読み込みましたが、ローカル保存に失敗しました。JSON書出でバックアップしてください。');
    return true;
  }catch(err){
    console.error('JSON import commit failed',err);
    devices=before.devices;cues=before.cues;selectedCue=before.selectedCue;selectedListIndex=before.selectedListIndex;selectedDevice=before.selectedDevice;
    try{renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(selectedCue);}catch(e){console.error(e)}
-   alert('JSONの読み込み処理中にエラーが発生したため、変更を取り消しました。');
+   if(!silent)alert('JSONの読み込み処理中にエラーが発生したため、変更を取り消しました。');
    return false;
  }
 }
@@ -2420,6 +2452,15 @@ document.addEventListener('keydown',e=>{
  }
 });
 updateHistoryButtons();
+
+openIoBtn.onclick=()=>{ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
+closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
+ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
+exportShareBtn.onclick=showExportShareCode;
+importShareBtn.onclick=()=>openShareBox('import');
+copyShareCode.onclick=copyShareCodeText;
+restoreShareCode.onclick=restoreShareCode;
+clearShareCode.onclick=()=>{shareCode.value='';shareMeta.textContent='';shareMessage.textContent='共有コード欄をクリアしました。';shareMessage.className='share-message'};
 
 resetProjectBtn.onclick=resetProjectData;
 exportDeviceCsvBtn.onclick=exportDeviceSetupCsv;
