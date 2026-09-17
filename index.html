@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v61</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v62</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -369,7 +369,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 
 /* v60: consolidated I/O sheet + share code */
 /* v61: consecutive GO runtime mixing in section monitor */
+/* v62: screen wake lock toggle for rehearsal/tablet use */
 .file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
+.wake-lock-btn{background:#3b4549;border-color:#6b7a80;font-weight:800;white-space:nowrap}.wake-lock-btn.active{background:#176b3b;border-color:#47c77a;color:#fff}.wake-lock-btn.waiting{background:#66521b;border-color:#caa63a;color:#fff}.wake-lock-btn:disabled{opacity:.55}
 .io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
 .io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
 .io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
@@ -394,8 +396,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     </div>
     <div class="top-file-actions">
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
+      <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v61</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v62</div>
   </div>
 </div>
 
@@ -581,6 +584,54 @@ let stageScaleMode='fit';
 let cueClipboard=null;
 let hangingItemClipboard=null;
 let runClipboard=[];
+
+const WAKE_KEY='stageCuePrototypeWakeLockV1';
+let wakeLockSentinel=null;
+let wakeLockWanted=false;
+let wakeLockLastError='';
+try{wakeLockWanted=localStorage.getItem(WAKE_KEY)==='1'}catch{}
+function updateWakeLockButton(){
+ const b=document.getElementById('wakeLockBtn');if(!b)return;
+ const supported=!!navigator.wakeLock?.request;
+ b.classList.remove('active','waiting');
+ if(!supported){b.disabled=true;b.textContent='消灯防止 非対応';b.title='このブラウザは画面の消灯防止に対応していません';b.setAttribute('aria-pressed','false');return}
+ b.disabled=false;
+ const active=!!wakeLockSentinel&&!wakeLockSentinel.released;
+ b.setAttribute('aria-pressed',String(wakeLockWanted));
+ if(active){b.classList.add('active');b.textContent='消灯防止 ON';b.title='画面の自動消灯を防止しています。押すとOFFになります。'}
+ else if(wakeLockWanted){b.classList.add('waiting');b.textContent='消灯防止 待機';b.title=wakeLockLastError?`Wake Lock再取得待ち: ${wakeLockLastError}`:'画面復帰時に消灯防止を再取得します。'}
+ else{b.textContent='消灯防止 OFF';b.title='押すと画面の自動消灯を防止します。'}
+}
+async function acquireWakeLock(showError=false){
+ updateWakeLockButton();
+ if(!wakeLockWanted||document.visibilityState!=='visible'||!navigator.wakeLock?.request)return false;
+ if(wakeLockSentinel&&!wakeLockSentinel.released){updateWakeLockButton();return true}
+ try{
+   const sentinel=await navigator.wakeLock.request('screen');
+   wakeLockSentinel=sentinel;wakeLockLastError='';
+   sentinel.addEventListener('release',()=>{if(wakeLockSentinel===sentinel)wakeLockSentinel=null;updateWakeLockButton()});
+   updateWakeLockButton();return true;
+ }catch(err){
+   wakeLockSentinel=null;wakeLockLastError=String(err?.message||err||'取得できませんでした');updateWakeLockButton();
+   if(showError)alert('消灯防止を開始できませんでした。ブラウザの権限・省電力設定などを確認してください。');
+   return false;
+ }
+}
+async function setWakeLockWanted(wanted,showError=true){
+ wakeLockWanted=!!wanted;wakeLockLastError='';
+ try{localStorage.setItem(WAKE_KEY,wakeLockWanted?'1':'0')}catch{}
+ if(!wakeLockWanted){
+   const sentinel=wakeLockSentinel;wakeLockSentinel=null;
+   try{if(sentinel&&!sentinel.released)await sentinel.release()}catch{}
+   updateWakeLockButton();return;
+ }
+ await acquireWakeLock(showError);
+}
+function releaseWakeLockForBackground(){
+ const sentinel=wakeLockSentinel;wakeLockSentinel=null;
+ try{if(sentinel&&!sentinel.released)sentinel.release()}catch{}
+ updateWakeLockButton();
+}
 
 function isMemoEntry(q){return !!q && q.kind==='memo'}
 function normalizeCueEntries(){
@@ -2605,6 +2656,15 @@ document.addEventListener('keydown',e=>{
 });
 updateHistoryButtons();
 
+updateWakeLockButton();
+wakeLockBtn.onclick=()=>setWakeLockWanted(!wakeLockWanted,true);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible'&&wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0);
+ else if(document.visibilityState==='hidden')updateWakeLockButton();
+});
+window.addEventListener('pageshow',()=>{updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0)});
+window.addEventListener('pagehide',releaseWakeLockForBackground);
+
 openIoBtn.onclick=()=>{ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
 closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
 ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
@@ -2633,6 +2693,7 @@ importJsonFile.onchange=async e=>{
 };
 
 load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;const lo=+d.machineMin,hi=+d.machineMax;if(Number.isFinite(lo)&&Number.isFinite(hi))d.initialPosition=Math.max(lo,Math.min(hi,+d.initialPosition));if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
+updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0);
 </script>
 </body>
 </html>
