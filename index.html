@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v62</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v63</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -370,6 +370,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 /* v60: consolidated I/O sheet + share code */
 /* v61: consecutive GO runtime mixing in section monitor */
 /* v62: screen wake lock toggle for rehearsal/tablet use */
+/* v63: fix share-code restore UI binding; avoid DOM id/function global name collisions */
 .file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
 .wake-lock-btn{background:#3b4549;border-color:#6b7a80;font-weight:800;white-space:nowrap}.wake-lock-btn.active{background:#176b3b;border-color:#47c77a;color:#fff}.wake-lock-btn.waiting{background:#66521b;border-color:#caa63a;color:#fff}.wake-lock-btn:disabled{opacity:.55}
 .io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
@@ -398,7 +399,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v62</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v63</div>
   </div>
 </div>
 
@@ -1253,10 +1254,18 @@ async function compressBytes(bytes){const stream=new Blob([bytes]).stream().pipe
 async function decompressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
 async function makeShareCode(){const raw=new TextEncoder().encode(JSON.stringify(projectPayload()));if('CompressionStream' in window&&'DecompressionStream' in window){try{const packed=await compressBytes(raw);return {code:'SCUE1:G:'+bytesToBase64Url(packed),rawBytes:raw.length,codeBytes:packed.length,compressed:true}}catch(e){console.warn('share compression failed',e)}}return {code:'SCUE1:J:'+bytesToBase64Url(raw),rawBytes:raw.length,codeBytes:raw.length,compressed:false}}
 async function parseShareCode(text){const compact=String(text||'').trim().replace(/\s+/g,'');const m=/^SCUE1:([GJ]):([A-Za-z0-9_-]+)$/.exec(compact);if(!m)throw new Error('共有コードの形式が正しくありません');let bytes=base64UrlToBytes(m[2]);if(m[1]==='G'){if(!('DecompressionStream' in window))throw new Error('このブラウザは圧縮共有コードの読込に対応していません');bytes=await decompressBytes(bytes)}return JSON.parse(new TextDecoder().decode(bytes))}
-function openShareBox(mode){shareBox.classList.add('open');shareMessage.className='share-message';if(mode==='import'){shareTitle.textContent='共有コードを読込';shareMeta.textContent='';shareCode.value='';shareMessage.textContent='共有コードを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCode.focus(),0)}}
-async function showExportShareCode(){openShareBox('export');shareTitle.textContent='共有コードを書出';shareMeta.textContent='作成中…';shareCode.value='';shareMessage.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCode.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMeta.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessage.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessage.className='share-message ok'}catch(e){shareMeta.textContent='';shareMessage.textContent='共有コードの作成に失敗しました: '+e.message;shareMessage.className='share-message error'}}
-async function copyShareCodeText(){if(!shareCode.value.trim()){shareMessage.textContent='コピーする共有コードがありません。';shareMessage.className='share-message error';return}let ok=false;try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(shareCode.value);ok=true}}catch(e){}if(!ok){try{shareCode.focus();shareCode.select();shareCode.setSelectionRange(0,shareCode.value.length);ok=document.execCommand('copy')}catch(e){}}shareMessage.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄を選択して手動でコピーしてください。';shareMessage.className='share-message '+(ok?'ok':'error')}
-async function restoreShareCode(){const code=shareCode.value.trim();if(!code){shareMessage.textContent='共有コードを貼り付けてください。';shareMessage.className='share-message error';return}shareMessage.textContent='共有コードを確認しています…';shareMessage.className='share-message';try{const obj=await parseShareCode(code);const checked=validateProjectPayload(obj);if(!checked.ok)throw new Error(checked.msg);if(importProjectJson(obj,{silent:true})){clearEditHistory();shareMessage.textContent='共有コードからプロジェクトを復元しました。';shareMessage.className='share-message ok';shareMeta.textContent='読込完了'}}catch(e){shareMessage.textContent='共有コードを読み込めません: '+e.message;shareMessage.className='share-message error'}}
+
+// Share-code UI: use explicit DOM references so element ids never compete with function names.
+const shareBoxEl=document.getElementById('shareBox');
+const shareTitleEl=document.getElementById('shareTitle');
+const shareMetaEl=document.getElementById('shareMeta');
+const shareCodeEl=document.getElementById('shareCode');
+const shareMessageEl=document.getElementById('shareMessage');
+
+function openShareBox(mode){shareBoxEl.classList.add('open');shareMessageEl.className='share-message';if(mode==='import'){shareTitleEl.textContent='共有コードを読込';shareMetaEl.textContent='';shareCodeEl.value='';shareMessageEl.textContent='共有コードを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCodeEl.focus(),0)}}
+async function showExportShareCode(){openShareBox('export');shareTitleEl.textContent='共有コードを書出';shareMetaEl.textContent='作成中…';shareCodeEl.value='';shareMessageEl.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCodeEl.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMetaEl.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessageEl.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessageEl.className='share-message ok'}catch(e){shareMetaEl.textContent='';shareMessageEl.textContent='共有コードの作成に失敗しました: '+e.message;shareMessageEl.className='share-message error'}}
+async function copyShareCodeText(){if(!shareCodeEl.value.trim()){shareMessageEl.textContent='コピーする共有コードがありません。';shareMessageEl.className='share-message error';return}let ok=false;try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(shareCodeEl.value);ok=true}}catch(e){}if(!ok){try{shareCodeEl.focus();shareCodeEl.select();shareCodeEl.setSelectionRange(0,shareCodeEl.value.length);ok=document.execCommand('copy')}catch(e){}}shareMessageEl.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄を選択して手動でコピーしてください。';shareMessageEl.className='share-message '+(ok?'ok':'error')}
+async function restoreShareCodeFromText(){const code=shareCodeEl.value.trim();if(!code){shareMessageEl.textContent='共有コードを貼り付けてください。';shareMessageEl.className='share-message error';return}shareMessageEl.textContent='共有コードを確認しています…';shareMessageEl.className='share-message';try{const obj=await parseShareCode(code);const checked=validateProjectPayload(obj);if(!checked.ok)throw new Error(checked.msg);if(importProjectJson(obj,{silent:true})){clearEditHistory();shareMessageEl.textContent='共有コードからプロジェクトを復元しました。';shareMessageEl.className='share-message ok';shareMetaEl.textContent='読込完了'}}catch(e){shareMessageEl.textContent='共有コードを読み込めません: '+e.message;shareMessageEl.className='share-message error'}}
 
 function exportProjectJson(){
  const payload=projectPayload();
@@ -2668,11 +2677,11 @@ window.addEventListener('pagehide',releaseWakeLockForBackground);
 openIoBtn.onclick=()=>{ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
 closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
 ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
-exportShareBtn.onclick=showExportShareCode;
-importShareBtn.onclick=()=>openShareBox('import');
-copyShareCode.onclick=copyShareCodeText;
-restoreShareCode.onclick=restoreShareCode;
-clearShareCode.onclick=()=>{shareCode.value='';shareMeta.textContent='';shareMessage.textContent='共有コード欄をクリアしました。';shareMessage.className='share-message'};
+document.getElementById('exportShareBtn').addEventListener('click',showExportShareCode);
+document.getElementById('importShareBtn').addEventListener('click',()=>openShareBox('import'));
+document.getElementById('copyShareCode').addEventListener('click',copyShareCodeText);
+document.getElementById('restoreShareCode').addEventListener('click',restoreShareCodeFromText);
+document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
 
 resetProjectBtn.onclick=resetProjectData;
 exportDeviceCsvBtn.onclick=exportDeviceSetupCsv;
