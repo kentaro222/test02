@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v63</title>
+<title>舞台機構シミュレーター / PC・Tablet試作 v65</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -371,12 +371,18 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 /* v61: consecutive GO runtime mixing in section monitor */
 /* v62: screen wake lock toggle for rehearsal/tablet use */
 /* v63: fix share-code restore UI binding; avoid DOM id/function global name collisions */
+/* v64: project name, last edit time, and share text */
+/* v65: project details are edited in the I/O sheet. */
 .file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
 .wake-lock-btn{background:#3b4549;border-color:#6b7a80;font-weight:800;white-space:nowrap}.wake-lock-btn.active{background:#176b3b;border-color:#47c77a;color:#fff}.wake-lock-btn.waiting{background:#66521b;border-color:#caa63a;color:#fff}.wake-lock-btn:disabled{opacity:.55}
 .io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
 .io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
 .io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
 .share-box{display:none;margin-top:10px;padding:10px;border:1px solid #586164;border-radius:7px;background:#171c1e}.share-box.open{display:block}.share-box textarea{width:100%;min-height:145px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:9px;font:11px/1.45 monospace;word-break:break-all}.share-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.share-actions button{flex:1 1 140px;min-height:38px}.share-message{margin-top:7px;font-size:11px;color:#aeb9bd;line-height:1.5}.share-message.ok{color:#8fd6a4}.share-message.error{color:#ff8f98}.share-meta{font-size:11px;color:#aeb9bd}
+.io-project-info{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #586164;border-radius:6px;background:#171c1e}
+.io-project-name{display:flex;flex:1 1 300px;min-width:0;flex-direction:column;gap:5px;font-size:12px;color:#dce5e8}
+.io-project-name input{width:100%;min-width:0;height:38px;padding:6px 9px;background:#202528;color:#fff;border:1px solid #687479;border-radius:4px}
+.io-updated-at{flex:1 1 220px;min-width:0;line-height:1.6}
 @media(max-width:560px){.io-grid{grid-template-columns:1fr}.io-modal{padding:6px}.io-sheet{max-height:calc(100dvh - 12px)}}
 
 </style>
@@ -399,12 +405,18 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v63</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v65</div>
   </div>
 </div>
 
 <div id="ioModal" class="io-modal" aria-hidden="true"><div class="io-sheet">
   <div class="io-head"><h3>入出力</h3><div class="grow"></div><span class="share-meta">プロジェクト保存・CSV書出</span></div>
+  <div class="io-project-info">
+    <label class="io-project-name" for="projectNameInput">プロジェクト名
+      <input id="projectNameInput" type="text" maxlength="200" autocomplete="off" placeholder="名称未設定">
+    </label>
+    <div class="share-meta io-updated-at">最終更新日時: <span id="ioUpdatedAt"></span></div>
+  </div>
   <div class="io-grid">
     <button id="csvInitBtn" class="primary">装置CSV読込</button>
     <button id="exportDeviceCsvBtn">装置CSV書出</button>
@@ -417,8 +429,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
   </div>
   <div id="shareBox" class="share-box">
     <div class="io-head"><strong id="shareTitle">共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
+    <div class="share-meta">プロジェクト名: <span id="shareProjectName"></span> ／ 最終更新日時: <span id="shareUpdatedAt"></span></div>
     <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="SCUE1:... の共有コードをここへ貼り付け"></textarea>
-    <div class="share-actions"><button id="copyShareCode" class="primary">コードをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
+    <div class="share-actions"><button id="copyShareCode" class="primary">コードをコピー</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
     <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
   </div>
   <button id="closeIoBtn" class="io-close">閉じる</button>
@@ -578,6 +591,30 @@ let liveSession=null;
 let cues=[
  {number:"001.00",name:"新規キュー",runs:[]}
 ];
+let projectName='';
+let updatedAt=null;
+let lastProjectContent=JSON.stringify([projectName,devices,cues]);
+function validUpdatedAt(value){return typeof value==='string' && value.trim() && Number.isFinite(Date.parse(value))?value:null}
+function projectContent(){return JSON.stringify([projectName,devices,cues])}
+function syncProjectChange(){
+ const content=projectContent();
+ if(content===lastProjectContent)return;
+ updatedAt=new Date(Math.max(Date.now(),(Date.parse(updatedAt)||0)+1)).toISOString();
+ lastProjectContent=content;
+ refreshProjectInfo();
+}
+function shownProjectName(){return projectName.trim()||'名称未設定'}
+function shownUpdatedAt(){return updatedAt?new Date(updatedAt).toLocaleString('ja-JP'):'不明'}
+function refreshProjectInfo(forceInput=false){
+ const input=document.getElementById('projectNameInput');
+ if(input && input.value!==projectName && (forceInput || document.activeElement!==input))input.value=projectName;
+ document.getElementById('shareProjectName').textContent=shownProjectName();
+ for(const id of ['ioUpdatedAt','shareUpdatedAt'])document.getElementById(id).textContent=shownUpdatedAt();
+}
+function safeProjectFilename(){
+ const name=projectName.normalize('NFKC').replace(/[\x00-\x1f\x7f<>:"/\\|?*]/g,'_').replace(/[.\s]+$/g,'').trim();
+ return Array.from(name).slice(0,60).join('').replace(/[.\s]+$/g,'')||'stage_project';
+}
 let livePositions={};
 let selectedListIndex=0;
 let positionDisplayMode='label';
@@ -704,6 +741,9 @@ function load(){
   devices=deep(d.devices);
   cues=deep(d.cues);normalizeCueEntries();
   if(!cues.length)cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+  projectName=typeof d.projectName==='string'?d.projectName:'';
+  updatedAt=validUpdatedAt(d.updatedAt);
+  lastProjectContent=projectContent();
  }catch(e){
   console.error('localStorage load failed',e);
   if(typeof saveState!=='undefined'){saveState.textContent='保存データ読込失敗';saveState.classList.remove('saving');saveState.classList.add('error')}
@@ -712,8 +752,9 @@ function load(){
 let saveTimer=null;
 function save(){
  if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+ syncProjectChange();
  try{
-  localStorage.setItem(KEY,JSON.stringify({app:'stage-cue-simulator',formatVersion:1,devices,cues}));
+  localStorage.setItem(KEY,JSON.stringify(projectPayload()));
   if(typeof saveState!=='undefined'){saveState.textContent='保存済み';saveState.classList.remove('saving','error')}
   return true;
  }catch(e){
@@ -723,6 +764,7 @@ function save(){
  }
 }
 function scheduleSave(){
+ syncProjectChange();
  if(typeof saveState!=='undefined'){saveState.textContent='保存中…';saveState.classList.remove('error');saveState.classList.add('saving')}
  clearTimeout(saveTimer);
  saveTimer=setTimeout(()=>{saveTimer=null;save()},350);
@@ -741,6 +783,7 @@ let historyInputTimer=null;
 
 function historySnapshot(){
  return {
+   projectName,
    devices:deep(devices),
    cues:deep(cues),
    selectedDevice,
@@ -790,6 +833,7 @@ function restoreHistorySnapshot(s){
 
  devices=deep(s.devices);
  cues=deep(s.cues);
+ projectName=s.projectName??'';
  normalizeCueEntries();
 
  selectedDevice=dev(s.selectedDevice)?s.selectedDevice:(devices.find(d=>d.id==='B1')?.id||devices[0]?.id);
@@ -799,6 +843,7 @@ function restoreHistorySnapshot(s){
  if(selectedCue<0)selectedCue=findPlayableFrom(0,1);
 
  save();
+ refreshProjectInfo(true);
  renderDeviceList();
  renderSettings();
  renderInitialBulk();
@@ -857,6 +902,8 @@ function resetProjectData(){
 
  // 画面の構造上、Cueを完全0件にはせず、空の001.00を1件だけ置く。
  cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+ projectName='';
+ updatedAt=null;
 
  selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
  selectedCue=0;
@@ -870,6 +917,7 @@ function resetProjectData(){
  localStorage.removeItem(KEY);
  clearEditHistory();
  save();
+ refreshProjectInfo();
 
  const notice=document.getElementById('csvStateNotice');
  if(notice)notice.textContent='リセット済み：装置CSVを読み込むと新しい仕込みを作成できます。';
@@ -1158,7 +1206,7 @@ function exportDeviceSetupCsv(){
  const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
  const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
  a.href=URL.createObjectURL(blob);
- a.download=`stage_tappa_${date}_${time}.csv`;
+ a.download=`${safeProjectFilename()}_stage_tappa_${date}_${time}.csv`;
  document.body.appendChild(a);
  a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
@@ -1239,21 +1287,28 @@ function exportCueSheetCsv(){
  const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
  const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
  a.href=URL.createObjectURL(blob);
- a.download=`stage_cue_sheet_${date}_${time}.csv`;
+ a.download=`${safeProjectFilename()}_stage_cue_sheet_${date}_${time}.csv`;
  document.body.appendChild(a);
  a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
 }
 
 function projectPayload(){
- return {app:"stage-cue-simulator",formatVersion:1,savedAt:new Date().toISOString(),devices:deep(devices),cues:deep(cues)};
+ syncProjectChange();
+ return {app:"stage-cue-simulator",formatVersion:1,projectName,updatedAt,savedAt:new Date().toISOString(),devices:deep(devices),cues:deep(cues)};
 }
 function bytesToBase64Url(bytes){let bin='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function base64UrlToBytes(text){let x=String(text||'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');while(x.length%4)x+='=';const bin=atob(x),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
 async function compressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
 async function decompressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
 async function makeShareCode(){const raw=new TextEncoder().encode(JSON.stringify(projectPayload()));if('CompressionStream' in window&&'DecompressionStream' in window){try{const packed=await compressBytes(raw);return {code:'SCUE1:G:'+bytesToBase64Url(packed),rawBytes:raw.length,codeBytes:packed.length,compressed:true}}catch(e){console.warn('share compression failed',e)}}return {code:'SCUE1:J:'+bytesToBase64Url(raw),rawBytes:raw.length,codeBytes:raw.length,compressed:false}}
-async function parseShareCode(text){const compact=String(text||'').trim().replace(/\s+/g,'');const m=/^SCUE1:([GJ]):([A-Za-z0-9_-]+)$/.exec(compact);if(!m)throw new Error('共有コードの形式が正しくありません');let bytes=base64UrlToBytes(m[2]);if(m[1]==='G'){if(!('DecompressionStream' in window))throw new Error('このブラウザは圧縮共有コードの読込に対応していません');bytes=await decompressBytes(bytes)}return JSON.parse(new TextDecoder().decode(bytes))}
+function extractShareCode(text){
+ const found=[...String(text||'').matchAll(/(?:^|[^A-Za-z0-9_-])(SCUE1:[GJ]:[A-Za-z0-9_-]+)(?![A-Za-z0-9_-])/g)].map(m=>m[1]);
+ if(!found.length)throw new Error('有効な形式のSCUE1共有コードが見つかりません');
+ if(found.length!==1)throw new Error('SCUE1共有コードが複数あります。1つだけ貼り付けてください');
+ return found[0];
+}
+async function parseShareCode(text){const compact=extractShareCode(text);const m=/^SCUE1:([GJ]):([A-Za-z0-9_-]+)$/.exec(compact);let bytes=base64UrlToBytes(m[2]);if(m[1]==='G'){if(!('DecompressionStream' in window))throw new Error('このブラウザは圧縮共有コードの読込に対応していません');bytes=await decompressBytes(bytes)}return JSON.parse(new TextDecoder().decode(bytes))}
 
 // Share-code UI: use explicit DOM references so element ids never compete with function names.
 const shareBoxEl=document.getElementById('shareBox');
@@ -1262,9 +1317,28 @@ const shareMetaEl=document.getElementById('shareMeta');
 const shareCodeEl=document.getElementById('shareCode');
 const shareMessageEl=document.getElementById('shareMessage');
 
-function openShareBox(mode){shareBoxEl.classList.add('open');shareMessageEl.className='share-message';if(mode==='import'){shareTitleEl.textContent='共有コードを読込';shareMetaEl.textContent='';shareCodeEl.value='';shareMessageEl.textContent='共有コードを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCodeEl.focus(),0)}}
+function openShareBox(mode){refreshProjectInfo();shareBoxEl.classList.add('open');shareMessageEl.className='share-message';if(mode==='import'){shareTitleEl.textContent='共有コードを読込';shareMetaEl.textContent='';shareCodeEl.value='';shareMessageEl.textContent='共有コードまたは共有用テキストを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCodeEl.focus(),0)}}
 async function showExportShareCode(){openShareBox('export');shareTitleEl.textContent='共有コードを書出';shareMetaEl.textContent='作成中…';shareCodeEl.value='';shareMessageEl.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCodeEl.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMetaEl.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessageEl.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessageEl.className='share-message ok'}catch(e){shareMetaEl.textContent='';shareMessageEl.textContent='共有コードの作成に失敗しました: '+e.message;shareMessageEl.className='share-message error'}}
-async function copyShareCodeText(){if(!shareCodeEl.value.trim()){shareMessageEl.textContent='コピーする共有コードがありません。';shareMessageEl.className='share-message error';return}let ok=false;try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(shareCodeEl.value);ok=true}}catch(e){}if(!ok){try{shareCodeEl.focus();shareCodeEl.select();shareCodeEl.setSelectionRange(0,shareCodeEl.value.length);ok=document.execCommand('copy')}catch(e){}}shareMessageEl.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄を選択して手動でコピーしてください。';shareMessageEl.className='share-message '+(ok?'ok':'error')}
+async function copyTextToClipboard(value){
+ try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);return true}}catch(e){}
+ const temp=document.createElement('textarea');temp.value=value;temp.style.position='fixed';temp.style.opacity='0';document.body.appendChild(temp);
+ temp.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}temp.remove();return ok;
+}
+async function copyShareCodeText(){
+ try{const code=extractShareCode(shareCodeEl.value);const ok=await copyTextToClipboard(code);shareMessageEl.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄から手動でコピーしてください。';shareMessageEl.className='share-message '+(ok?'ok':'error')}
+ catch(e){shareMessageEl.textContent=e.message;shareMessageEl.className='share-message error'}
+}
+async function copyShareTextForSharing(){
+ try{
+  const code=extractShareCode(shareCodeEl.value);
+  const payload=await parseShareCode(code);
+  const name=typeof payload.projectName==='string'&&payload.projectName.trim()?payload.projectName.trim():'名称未設定';
+  const time=validUpdatedAt(payload.updatedAt)?new Date(payload.updatedAt).toLocaleString('ja-JP'):'不明';
+  const text=`プロジェクト名: ${name.replace(/[\r\n]+/g,' ')}\n最終更新日時: ${time}\n\n${code}`;
+  const ok=await copyTextToClipboard(text);
+  shareMessageEl.textContent=ok?'共有用テキストをコピーしました。':'自動コピーできませんでした。';shareMessageEl.className='share-message '+(ok?'ok':'error');
+ }catch(e){shareMessageEl.textContent=e.message;shareMessageEl.className='share-message error'}
+}
 async function restoreShareCodeFromText(){const code=shareCodeEl.value.trim();if(!code){shareMessageEl.textContent='共有コードを貼り付けてください。';shareMessageEl.className='share-message error';return}shareMessageEl.textContent='共有コードを確認しています…';shareMessageEl.className='share-message';try{const obj=await parseShareCode(code);const checked=validateProjectPayload(obj);if(!checked.ok)throw new Error(checked.msg);if(importProjectJson(obj,{silent:true})){clearEditHistory();shareMessageEl.textContent='共有コードからプロジェクトを復元しました。';shareMessageEl.className='share-message ok';shareMetaEl.textContent='読込完了'}}catch(e){shareMessageEl.textContent='共有コードを読み込めません: '+e.message;shareMessageEl.className='share-message error'}}
 
 function exportProjectJson(){
@@ -1276,13 +1350,15 @@ function exportProjectJson(){
  const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
  const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
  a.href=URL.createObjectURL(blob);
- a.download=`stage_sim_${date}_${time}.json`;
+ a.download=`${safeProjectFilename()}_stage_sim_${date}_${time}.json`;
  document.body.appendChild(a);
  a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
 }
 function validateProjectPayload(obj){
  if(!obj || typeof obj!=='object')return {ok:false,msg:'JSONのルート形式が不正です。'};
+ if(obj.projectName!=null && typeof obj.projectName!=='string')return {ok:false,msg:'projectName が文字列ではありません。'};
+ if(obj.updatedAt!=null && !validUpdatedAt(obj.updatedAt))return {ok:false,msg:'updatedAt が日時ではありません。'};
  if(obj.app!=null && obj.app!=='stage-cue-simulator')return {ok:false,msg:'別のアプリのJSONです。'};
  if(obj.formatVersion!=null && (!Number.isInteger(+obj.formatVersion) || +obj.formatVersion<1 || +obj.formatVersion>1)){
    return {ok:false,msg:`未対応のJSON形式です（formatVersion: ${obj.formatVersion}）。`};
@@ -1348,14 +1424,18 @@ function importProjectJson(obj,{silent=false}={}){
  const checked=validateProjectPayload(obj);
  if(!checked.ok){if(!silent)alert('このJSONは読み込めません。\n'+checked.msg);return false;}
 
- const before={devices:deep(devices),cues:deep(cues),selectedCue,selectedListIndex,selectedDevice};
+ const before={devices:deep(devices),cues:deep(cues),projectName,updatedAt,lastProjectContent,selectedCue,selectedListIndex,selectedDevice};
  try{
    const nextDevices=deep(obj.devices);
    const nextCues=deep(obj.cues);
    devices=nextDevices;
    cues=nextCues;
+   projectName=obj.projectName??'';
+   updatedAt=validUpdatedAt(obj.updatedAt);
    normalizeCueEntries();
    if(!cues.length)cues=[{number:"001.00",name:"新規キュー",runs:[]}];
+   lastProjectContent=projectContent();
+   refreshProjectInfo();
    selectedCue=0;selectedListIndex=0;
    selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
    const saved=save();
@@ -1368,7 +1448,8 @@ function importProjectJson(obj,{silent=false}={}){
    return true;
  }catch(err){
    console.error('JSON import commit failed',err);
-   devices=before.devices;cues=before.cues;selectedCue=before.selectedCue;selectedListIndex=before.selectedListIndex;selectedDevice=before.selectedDevice;
+   devices=before.devices;cues=before.cues;projectName=before.projectName;updatedAt=before.updatedAt;lastProjectContent=before.lastProjectContent;selectedCue=before.selectedCue;selectedListIndex=before.selectedListIndex;selectedDevice=before.selectedDevice;
+   refreshProjectInfo();
    try{renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(selectedCue);}catch(e){console.error(e)}
    if(!silent)alert('JSONの読み込み処理中にエラーが発生したため、変更を取り消しました。');
    return false;
@@ -2272,7 +2353,7 @@ function renderCueEditor(){
  }).join('');
  cueEditor.innerHTML=`<div class="q-block"><div class="q-header"><input class="q-number" id="editQNum" inputmode="decimal" placeholder="000.00" value="${formatCueNumber(q.number)||'000.00'}"><input class="q-name" id="editQName" value="${escapeHtml(q.name||'')}"><div class="q-actions"><button id="previewQ">断面で確認</button></div></div>
  <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><button id="deleteRows" class="danger" disabled>選択装置を削除</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
- <div id="cueValidation" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${escapeHtml(e.device)}: ${escapeHtml(e.msg)}</div>`).join('')}</div>
+ <div id="cueValidationPanel" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${escapeHtml(e.device)}: ${escapeHtml(e.msg)}</div>`).join('')}</div>
  <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${escapeHtml(q.number)}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
  <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:40px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
  <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>現在地</th><th>方向</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
@@ -2674,12 +2755,20 @@ document.addEventListener('visibilitychange',()=>{
 window.addEventListener('pageshow',()=>{updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0)});
 window.addEventListener('pagehide',releaseWakeLockForBackground);
 
-openIoBtn.onclick=()=>{ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
+document.getElementById('projectNameInput').addEventListener('input',e=>{
+ if(projectName===e.target.value)return;
+ pushUndoSnapshotForInput('projectName');
+ projectName=e.target.value;
+ scheduleSave();
+ refreshProjectInfo();
+});
+openIoBtn.onclick=()=>{refreshProjectInfo();ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
 closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
 ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
 document.getElementById('exportShareBtn').addEventListener('click',showExportShareCode);
 document.getElementById('importShareBtn').addEventListener('click',()=>openShareBox('import'));
 document.getElementById('copyShareCode').addEventListener('click',copyShareCodeText);
+document.getElementById('copyShareText').addEventListener('click',copyShareTextForSharing);
 document.getElementById('restoreShareCode').addEventListener('click',restoreShareCodeFromText);
 document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
 
@@ -2701,7 +2790,7 @@ importJsonFile.onchange=async e=>{
  e.target.value='';
 };
 
-load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;const lo=+d.machineMin,hi=+d.machineMax;if(Number.isFinite(lo)&&Number.isFinite(hi))d.initialPosition=Math.max(lo,Math.min(hi,+d.initialPosition));if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
+load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;const lo=+d.machineMin,hi=+d.machineMax;if(Number.isFinite(lo)&&Number.isFinite(hi))d.initialPosition=Math.max(lo,Math.min(hi,+d.initialPosition));if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});lastProjectContent=projectContent();refreshProjectInfo();renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
 updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0);
 </script>
 </body>
