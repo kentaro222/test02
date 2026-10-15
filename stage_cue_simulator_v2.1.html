@@ -1,0 +1,2919 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>舞台機構シミュレーター v2.1</title>
+<style>
+:root{
+  --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
+  --muted:#aeb9bd;--blue:#0076bd;--blue2:#0696dc;--cyan:#42e4ea;--yellow:#eff300;
+  --red:#ff4c55;--green:#55d47b;--black:#0c0e0f;--input:#202528;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"BIZ UDGothic","BIZ UDゴシック","MS Gothic",monospace;overflow:hidden}
+button,input,select{font:inherit}
+.topbar{height:54px;display:flex;align-items:center;gap:4px;padding:6px 8px;background:#191d1f;border-bottom:1px solid #667174;overflow:hidden}
+.tab-strip{display:flex;align-items:center;gap:4px;flex:1 0 max-content;min-width:max-content;max-width:576px}
+.top-utility-strip{display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;margin-left:auto;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.top-utility-strip>*{flex:0 0 auto}
+.tab-btn{height:34px;min-width:max-content;flex:1 0 max-content;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;font-size:11px;padding:0 8px;white-space:nowrap;cursor:pointer}
+.tab-btn.active{background:#0898df;box-shadow:inset 0 -3px 0 #9ef0ff}
+.top-file-actions{display:flex;gap:6px;margin-left:0}
+.file-btn{height:30px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 7px;font-size:11px;white-space:nowrap;cursor:pointer}
+.file-btn:hover{background:#4a565b}
+.history-actions{display:flex;gap:4px;margin-left:0}
+.history-actions button{height:30px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:3px;padding:0 6px;font-family:inherit;font-size:11px;white-space:nowrap;cursor:pointer}
+.history-actions button:disabled{opacity:.35;cursor:default}
+.history-actions button:not(:disabled):hover{background:#465157}
+.top-file-actions{margin-left:4px}
+.file-btn.danger{background:#7d292e;border-color:#b85259}
+.file-btn.danger:hover{background:#96343b}
+.save-state{font-size:11px;color:#8fd6a4;min-width:52px;text-align:right;white-space:nowrap}.save-state.saving{color:#ffd86b}.save-state.error{color:#ff7b80}.app-title{font-size:10px;color:#9ba7ab;white-space:nowrap}
+.tab{display:none;height:calc(100vh - 54px)}
+.tab.active{display:block}
+.monitor-layout{height:100%;display:grid;grid-template-columns:1fr 325px;gap:8px;padding:8px}
+.stage-card,.side-card,.settings-shell,.cue-main{background:#f8f8f6;border:1px solid #778083;color:#111;position:relative}
+.stage-toolbar{height:34px;background:#23282a;color:#fff;display:flex;align-items:center;gap:10px;padding:4px 10px}
+.stage-title{font-weight:700}
+.stage-viewport{position:absolute;left:0;right:0;top:34px;bottom:0;overflow:auto;background:#f8f8f6;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.stage-canvas{position:relative;width:100%;height:100%;min-width:100%;min-height:100%;overflow:hidden;background:#f8f8f6}
+.ref-line{position:absolute;left:3%;right:3%;border-top:2px solid #111}
+.ref-line.fly{border-top:2px dotted red}
+.ref-line.prosc{border-top:3px solid #111}
+.ref-label{position:absolute;right:8px;transform:translateY(-50%);background:#f8f8f6;padding:0 5px;font-size:12px}
+.dev-label{position:absolute;top:2px;transform:translateX(-50%);font-size:9px;writing-mode:vertical-rl;text-orientation:upright;letter-spacing:0;height:42px;overflow:hidden}
+.baton-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:#111;transform:translate(-3px,-3px);z-index:4}
+.lift-wire{position:absolute;width:1px;background:#8b8b8b;transform:translateX(-50%);z-index:1}
+.hang-wire{position:absolute;width:2px;background:#333;transform:translateX(-50%);z-index:2}
+.hang-wire.active{background:#007fd0}
+.item{position:absolute;transform:translateX(-50%);min-width:5px;border:1px solid #111;background:var(--item-color,#d9d9d9)}
+.item.curtain{background:var(--item-color,#cc1d25);border-color:#9f1117;min-width:10px}
+.item.lb{background:#cfd4d8;border:2px solid #555;min-width:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
+.item.uhl{background:#f4a200;border:1px solid #8e5b00;min-width:8px}
+.item.hasname{min-width:7px}
+.item.active{box-shadow:0 0 0 3px rgba(0,133,255,.35)}
+.side-card{background:#202527;color:#fff;padding:10px;overflow:auto}
+.now-q{background:#111;border:2px solid #eff300;padding:10px;margin-bottom:10px}
+.now-q .qnum{font-size:25px;color:#eff300;font-weight:800}
+.transport{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}
+.transport button{background:#0075b8;border:1px solid #17a0e4;color:#fff;padding:10px 5px;border-radius:3px;font-weight:700}
+.timebar{width:100%}
+.status-list{font-size:12px;line-height:1.6}
+.status-row{display:grid;grid-template-columns:48px 1fr 74px;gap:6px;border-bottom:1px solid #454d50;padding:4px 0}
+.cue-layout{height:100%;display:grid;grid-template-columns:310px 1fr}
+.cue-left{background:#111417;border-right:1px solid #778083;padding:8px;color:#fff;overflow:hidden}
+.cue-head{height:74px;background:#ff7b80;color:#000;border:1px solid #ddd;display:flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:8px}
+.cue-list{height:calc(100% - 178px);overflow:auto;border:1px solid #555;background:#020303}
+.cue-list-item{padding:5px 8px;font-size:12px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cue-list-item.selected{background:#00a3ef;color:#fff}
+.cue-list-item.marker{color:#f0f000;font-weight:700}
+.cue-list-item.memo{color:#ffe98c;background:#252515;font-weight:800;border-top:1px solid #5b5632;border-bottom:1px solid #5b5632;padding-left:14px}
+.cue-list-item.memo.selected{background:#665d18;color:#fff6bd}
+.memo-editor{max-width:900px;background:#303436;border:1px solid #737d81;padding:14px}
+.memo-editor h2{margin:0 0 10px;color:#ffe98c}
+.memo-editor textarea{width:100%;min-height:110px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:10px;font-size:17px;line-height:1.5}
+.memo-editor .memo-actions{display:flex;gap:7px;margin-top:10px}
+.memo-editor .memo-actions button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:7px 12px}
+.memo-editor .memo-actions .danger{background:#8f2b31;border-color:#d85c64}
+.cue-left button{width:100%;margin-top:8px;background:#0075b8;color:#fff;border:1px solid #159ad9;padding:10px}
+.cue-main{background:#5f6162;color:#fff;overflow:auto;padding:10px}
+.q-block{margin-bottom:18px}
+.q-header{display:grid;grid-template-columns:70px 360px auto;gap:8px;align-items:center;margin-bottom:5px}
+.q-number{background:#f1f1f1;color:#111;padding:5px 8px;border:1px solid #222;font-weight:800;text-align:center}
+.q-name{background:#050606;color:#fff;border:1px solid #222;padding:5px 8px;height:30px}
+.q-actions button{background:#006eae;border:1px solid #16a0e7;color:#fff;padding:5px 9px;margin-right:4px}
+.run-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+.run-table th{background:#006fae;border:1px solid #86a4b3;padding:4px 2px;white-space:nowrap}
+.run-table td{background:#404244;border:1px solid #858585;padding:3px}
+.run-table input,.run-table select{width:100%;background:#303437;color:#fff;border:1px solid #888;padding:4px}
+.run-table .target{color:#3de7e7}
+.run-table .readonly{background:#292c2e;color:#bbb}
+.run-table .run-direction{background:#292c2e;font-weight:800;text-align:center;font-size:16px}
+.direction-up{color:#55d47b!important}
+.direction-down{color:#ff8fb3!important}
+.mon-direction{font-weight:900;text-align:center;font-size:15px}
+.add-row{margin-top:5px;background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 12px}
+.editor-toolbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}
+.editor-toolbar button{background:#006fad;border:1px solid #13a5ee;color:#fff;padding:5px 10px}
+.editor-toolbar button.danger{background:#8f2b31;border-color:#d85c64}
+.editor-toolbar button:disabled{opacity:.38;cursor:default}
+.editor-toolbar button.mutedbtn{background:#4b5357;border-color:#737f84}
+.renumber-box{display:grid;grid-template-columns:repeat(4,minmax(120px,180px));gap:8px;align-items:end;background:#33393c;border:1px solid #626d72;padding:8px;margin:8px 0}
+.renumber-box label{font-size:11px;color:#c0c9cc;display:block;margin-bottom:3px}
+.renumber-box input{width:100%;background:#202528;color:#fff;border:1px solid #687479;padding:5px}
+.row-select{text-align:center}
+.run-table td:first-child,.run-table th:first-child{text-align:center}
+.settings-shell{height:100%;display:grid;grid-template-columns:220px 1fr;background:#2b3032;color:#fff}
+.device-list{border-right:1px solid #6c777b;padding:8px;background:#181c1e;overflow:auto}
+.device-list h3{margin:3px 0 8px}
+.device-btn{display:flex;width:100%;justify-content:space-between;gap:8px;padding:7px 9px;background:#272d30;color:#fff;border:1px solid #444;margin-bottom:3px;cursor:pointer}
+.device-btn.active{background:#0077b8;border-color:#20a9ed}
+.settings-detail{padding:14px;overflow:auto}
+.hanging-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-2px 0 12px}
+.hanging-tools button{height:30px;padding:0 10px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;font-family:inherit;cursor:pointer}
+.hanging-tools button:hover{background:#4a565b}
+.hanging-tools button.danger{background:#7d292e;border-color:#ba5259}
+.hanging-tools button:disabled{opacity:.42;cursor:default}
+.hanging-clip-state{font-size:11px;color:#aeb9bd;margin-left:4px}
+.settings-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.field{background:#343a3d;border:1px solid #50585c;padding:8px}
+.field label{display:block;color:#b9c5c9;font-size:12px;margin-bottom:4px}
+.field input,.field select{width:100%;background:#202528;color:#fff;border:1px solid #697479;padding:6px}
+.field input[readonly]{color:#aab2b5;background:#252a2c}
+.notice{border:1px solid #d6a300;background:#4f4300;color:#ffe985;padding:8px;margin-bottom:10px}
+.label-table{width:100%;border-collapse:collapse;max-width:900px}
+.label-table th{background:#006fae;padding:6px;border:1px solid #7e9ca8}
+.label-table td{border:1px solid #596367;padding:5px;background:#383e41}
+.label-table input{width:100%;background:#22282a;color:#fff;border:1px solid #687479;padding:6px}
+.savebar{position:sticky;bottom:0;background:#2b3032;padding:12px 0}
+.primary{background:#0077b8;border:1px solid #13a4e9;color:#fff;padding:8px 18px;font-weight:700}
+.small-muted{font-size:12px;color:#aab5b9}
+.initial-page{height:100%;background:#252b2e;color:#fff;padding:14px;overflow:auto}
+.initial-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:12px}
+.initial-header h2{margin:0 0 4px}
+.initial-actions{display:flex;gap:8px;flex-wrap:wrap}
+.primary.secondary{background:#4a5459;border-color:#718087}
+.initial-table-wrap{border:1px solid #596469;background:#1d2224}
+.initial-full-table{width:100%;border-collapse:collapse;font-size:13px}
+.initial-full-table th{position:sticky;top:0;background:#006fae;border:1px solid #7896a4;padding:7px;z-index:2}
+.initial-full-table td{background:#363c3f;border:1px solid #596367;padding:5px}
+.initial-full-table tr:nth-child(even) td{background:#303639}
+.initial-full-table select,.initial-full-table input{width:100%;background:#202528;color:#fff;border:1px solid #687479;padding:6px}
+.initial-full-table .devcol{width:82px;font-weight:800}
+.initial-full-table .itemcol{width:240px}
+.initial-full-table .labelcol{width:260px}
+.initial-full-table .mmcol{width:150px}
+.initial-full-table .rangecol{width:170px;color:#b9c5c9}
+@media(max-width:1200px){.settings-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1500px){.app-title{display:none}.tab-btn{padding:0 6px}.file-btn{padding:0 6px}.history-actions button{padding:0 5px}}
+@media(max-width:1250px){.save-state{display:none}.tab-btn{font-size:11px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
+@media (orientation:portrait) and (max-width:1024px){
+  html,body{overscroll-behavior:none}
+  .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+  .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+  .tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
+  .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+  .top-utility-strip>*{flex:0 0 auto}
+  .history-actions,.top-file-actions{margin-left:0;gap:4px}
+  .history-actions button,.file-btn{height:36px;font-size:10px;padding:0 7px}
+  .save-state,.app-title{display:none}
+  .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+
+  .main-monitor{padding:4px;gap:4px;grid-template-rows:minmax(260px,62%) minmax(0,38%)}
+  .main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px}
+  .stage-toolbar{padding:4px 6px;gap:5px}
+  .stage-title{font-size:11px}
+  .stage-panel-toggle{font-size:10px;padding:0 5px;margin-left:2px}
+  .stage-scale-toggle{font-size:10px;padding:0 5px}
+  .stage-scale-label{font-size:9px}
+  .stage-viewport{scrollbar-width:thin}
+  .toolbar-q{font-size:11px}
+  #nowQName{font-size:10px;max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .monitor-validation{font-size:10px;margin-left:3px;max-width:30%}
+  .monitor-cue-head{gap:4px;padding:5px 5px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+  .monitor-cue-head button{padding:4px 7px;font-size:11px}
+  .position-mode{margin-left:2px}
+  .cue-seek{min-width:150px;max-width:300px}
+  .monitor-cue-browser{padding:3px}
+
+  .cue-layout{grid-template-columns:1fr;grid-template-rows:188px minmax(0,1fr)}
+  .cue-left{border-right:0;border-bottom:1px solid #778083;padding:5px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:34px minmax(82px,1fr) 38px;gap:4px;overflow:hidden}
+  .cue-head{grid-column:1/-1;height:34px;margin:0;font-size:20px}
+  .cue-list{grid-column:1/-1;height:auto;min-height:0}
+  .cue-list-item{padding:5px 7px;font-size:11px}
+  .cue-left button{width:100%;height:38px;margin:0;padding:4px 3px;font-size:10px;white-space:nowrap}
+  .cue-main{padding:6px;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .q-header{grid-template-columns:82px minmax(0,1fr);gap:5px}
+  .q-actions{grid-column:1/-1}
+  .q-actions button{min-height:34px}
+  .editor-toolbar{gap:4px}
+  .editor-toolbar button{min-height:34px;padding:5px 7px;font-size:11px}
+  .renumber-box{grid-template-columns:repeat(2,minmax(120px,1fr));gap:6px}
+  .run-table{font-size:11px;min-width:1330px}
+  .run-table thead th{position:sticky;top:0;z-index:4}
+  .run-table th:first-child,.run-table td:first-child{position:sticky;left:0;z-index:3}
+  .run-table th:nth-child(2),.run-table td:nth-child(2){position:sticky;left:34px;z-index:3;box-shadow:2px 0 3px rgba(0,0,0,.28)}
+  .run-table thead th:first-child,.run-table thead th:nth-child(2){z-index:6}
+  .cue-list,.monitor-cue-browser{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+
+  .settings-shell{grid-template-columns:1fr;grid-template-rows:76px minmax(0,1fr)}
+  .device-list{border-right:0;border-bottom:1px solid #6c777b;padding:5px;overflow:hidden}
+  .device-list h3{display:none}
+  #deviceList{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;height:64px;align-items:stretch}
+  .device-btn{flex:0 0 92px;height:58px;margin:0;padding:5px 6px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;font-size:12px;overflow:hidden}
+  .device-btn small{display:block;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+  .settings-detail{padding:8px}
+  .settings-detail h2{font-size:18px}
+  .settings-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+  .field{padding:6px}
+  .hanging-tools{gap:4px;margin-bottom:8px}
+  .hanging-tools button{height:36px;padding:0 8px;font-size:11px}
+  .label-table{min-width:520px}
+  .settings-detail{overflow:auto}
+
+  .initial-page{padding:8px}
+  .initial-header{display:block;margin-bottom:8px}
+  .initial-actions{margin-top:7px;gap:5px}
+  .initial-actions button{min-height:36px}
+  .initial-table-wrap{overflow:auto;-webkit-overflow-scrolling:touch}
+  .initial-full-table{min-width:760px}
+
+  .shaku-shell{padding:10px}
+  .shaku-panel{max-width:none;padding:14px}
+  .simple-calc{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .simple-calc-row{min-width:560px}
+}
+
+.main-monitor{height:100%;display:grid;grid-template-rows:65% 35%;gap:6px;padding:6px}
+.main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px;gap:6px}
+.main-monitor.cue-collapsed .monitor-cue-browser{display:none}
+.main-monitor.cue-collapsed .monitor-bottom{min-height:44px}
+.monitor-top,.monitor-bottom{min-height:0}
+.stage-panel-toggle{height:26px;margin-left:6px;padding:0 8px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap}
+.stage-panel-toggle:hover{background:#4a565b}
+.stage-scale-toggle{height:26px;padding:0 7px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px;font-size:11px;cursor:pointer;white-space:nowrap}
+.stage-scale-toggle.active{background:#0079b7;border-color:#20b7ff;font-weight:800}
+.stage-scale-label{font-size:10px;color:#c4ced1;margin-left:2px;white-space:nowrap}
+.monitor-top .stage-card{height:100%}
+.toolbar-q{font-weight:800;color:#eff300;margin-left:auto}
+.monitor-validation{margin-left:10px;color:#ff7575;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.cue-validation{display:none;background:#4b171a;color:#ffb1b5;border:1px solid #d45159;padding:7px 9px;margin:7px 0;font-size:12px}
+.cue-validation.show{display:block}
+.position-mode{display:inline-flex;align-items:center;gap:2px;margin-left:6px}
+.position-mode .mode-label{font-size:11px;color:#c4ced1;margin-right:2px}
+.position-mode button{height:26px;padding:0 6px;background:#394247;color:#fff;border:1px solid #6f7b80;border-radius:3px}
+.position-mode button.active{background:#0079b7;border-color:#20b7ff;font-weight:800}
+.run-table tr.invalid td{background:#4b2528}
+.run-table tr.invalid input,.run-table tr.invalid select{border-color:#e0676d}
+.readonly-derived{background:#262a2c!important;color:#d8e5e8!important}
+.monitor-bottom{background:#171b1d;border:1px solid #667174;color:#fff;display:flex;flex-direction:column}
+.monitor-cue-head{height:44px;display:flex;align-items:center;gap:7px;padding:5px 8px;background:#252b2e;border-bottom:1px solid #596367;flex-wrap:nowrap}
+.monitor-cue-head button{height:32px;background:#006fad;color:#fff;border:1px solid #13a5ee;padding:4px 10px;border-radius:3px;font-weight:700;white-space:nowrap}
+.monitor-cue-browser{flex:1;overflow:auto;padding:5px;background:#090b0c}
+.monitor-cue-head button.go{background:#0b7f3d;border-color:#39bd72}
+.monitor-cue-head .clock{min-width:64px;text-align:right;font-variant-numeric:tabular-nums;color:#fff}
+.control-separator{width:1px;height:26px;background:#667174;margin:0 2px}
+.cue-seek{flex:1;min-width:180px;max-width:520px}
+.mon-q{border:1px solid #3f474a;margin-bottom:4px;background:#191d1f;cursor:pointer}
+.mon-q.selected{border:2px solid #00a3ef;background:#20292d}
+.mon-q-header{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center;padding:5px 8px;position:sticky;left:0}
+.mon-q.memo{overflow:hidden}
+.mon-q.memo .mon-q-header{
+ display:block !important;
+ grid-template-columns:none !important;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ width:100%;
+ max-width:100%;
+ min-width:0;
+ box-sizing:border-box;
+ padding:6px 12px;
+ font-weight:800;
+ color:#ffe98c;
+}
+.mon-q-num{font-weight:800;color:#f0f000}
+.mon-q.selected .mon-q-num{color:#50ddff}
+.mon-q-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-q-summary{font-size:11px;color:#b7c1c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-run-grid{display:grid;grid-template-columns:200px 72px 80px 40px 72px 78px 92px 64px 56px 56px 56px 68px 68px 64px;gap:1px;background:#5c666a;border-top:1px solid #5c666a;font-size:11px;min-width:1110px}
+.mon-run-grid>div{background:#303639;padding:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mon-run-grid .mh{background:#006fae;font-weight:700}
+.mon-current{font-variant-numeric:tabular-nums;font-weight:800;color:#8ee7ff}
+.mon-clearance{font-variant-numeric:tabular-nums;font-weight:800;color:#d6f0b8}
+.mon-state{font-weight:800;text-align:center}
+.mon-state.wait{color:#aab3b7}
+.mon-state.run{color:#bde7ff}
+.mon-state.done{color:#8fd29f}
+.mon-state.switch{background:#8a5a00!important;color:#fff0a6!important;box-shadow:inset 0 0 0 1px #e4b13e}
+.mon-state.second{background:#705d00!important;color:#fff59c!important;box-shadow:inset 0 0 0 1px #d8c640}
+.mon-current.second{background:#4d4300!important;color:#fff7ad!important}
+
+.item{--item-color:#d9d9d9;background:var(--item-color)}
+.shaku-shell{height:100%;box-sizing:border-box;padding:22px;background:#1a1e20;color:#fff;overflow:auto}
+.shaku-panel{max-width:720px;background:#f8f8f6;color:#111;border:1px solid #778083;padding:20px}
+.shaku-panel h2{margin:0 0 5px;font-size:20px}
+.shaku-note{font-size:12px;color:#596368;margin-bottom:18px}
+.shaku-grid{display:grid;grid-template-columns:minmax(0,1fr) 46px minmax(0,1fr);gap:12px;align-items:end}
+.shaku-field label{display:block;font-size:13px;font-weight:800;margin-bottom:5px}
+.shaku-field input{width:100%;box-sizing:border-box;background:#fff;color:#111;border:1px solid #697479;padding:10px;font-family:inherit;font-size:22px}
+.shaku-arrow{text-align:center;font-size:22px;font-weight:800;padding-bottom:10px}
+.shaku-result{margin-top:16px;border-top:1px solid #a6afb2;padding-top:13px;font-size:13px;color:#4c565a;line-height:1.7}
+.shaku-result strong{font-size:17px;color:#111}
+.simple-calc{margin-top:22px;border-top:2px solid #8b9498;padding-top:18px}
+.simple-calc h3{margin:0 0 10px;font-size:17px}
+.simple-calc-row{display:grid;grid-template-columns:minmax(0,1fr) 70px minmax(0,1fr) 40px minmax(0,1fr);gap:8px;align-items:center}
+.simple-calc-row input,.simple-calc-row select{width:100%;box-sizing:border-box;background:#fff;color:#111;border:1px solid #697479;padding:9px;font-family:inherit;font-size:20px}
+.simple-calc-eq{text-align:center;font-size:22px;font-weight:800}
+.simple-calc-result{margin-top:10px;font-size:13px;color:#596368}
+
+
+/* v56: Android / tablet scroll containment fixes */
+.main-monitor{grid-template-columns:minmax(0,1fr);min-width:0;max-width:100%;width:100%;overflow:hidden}
+.monitor-top,.monitor-bottom,.stage-card,.stage-toolbar,.stage-viewport,.monitor-cue-head,.monitor-cue-browser{min-width:0;max-width:100%}
+.monitor-top,.monitor-bottom,.stage-card{width:100%}
+.monitor-bottom{overflow:hidden}
+.monitor-cue-browser{min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.stage-viewport{width:100%;touch-action:pan-x pan-y}
+
+.cue-layout,.cue-left,.cue-main{min-width:0;max-width:100%}
+.cue-layout{width:100%;overflow:hidden}
+.cue-main{min-height:0;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-x pan-y}
+.cue-list{min-width:0;min-height:0;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.settings-shell,.settings-detail,.initial-page,.initial-table-wrap{min-width:0;max-width:100%}
+
+@media (orientation:portrait) and (max-width:1024px){
+  /* Keep every page itself inside the viewport; only its intended panes may scroll. */
+  .tab{width:100%;max-width:100vw;min-width:0;overflow:hidden}
+  .main-monitor{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(260px,62%) minmax(0,38%);padding:4px;gap:4px}
+  .main-monitor.cue-collapsed{grid-template-rows:minmax(0,1fr) 44px}
+  .monitor-top,.monitor-bottom{min-width:0;width:100%;max-width:100%;overflow:hidden}
+  .stage-card{min-width:0;width:100%;max-width:100%;overflow:hidden}
+  .stage-toolbar{min-width:0;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  .stage-toolbar>*{flex:0 0 auto}
+  #nowQName{flex:0 1 170px;min-width:70px;max-width:170px}
+  .monitor-validation{flex:0 1 220px;min-width:80px;max-width:220px}
+  .stage-viewport{left:0;right:0;width:auto;max-width:none;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+
+  .monitor-cue-head{flex:0 0 44px;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  .monitor-cue-head>*{flex:0 0 auto}
+  .cue-seek{flex:0 0 260px;min-width:260px;max-width:260px}
+  .monitor-cue-browser{flex:1 1 auto;min-height:0;min-width:0;width:100%;max-width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .mon-q.selected{min-width:1110px}
+  .mon-q.selected .mon-q-header{position:static}
+  .mon-run-grid{width:max-content;min-width:1110px}
+
+  .cue-layout{width:100%;max-width:100%;min-width:0;grid-template-columns:minmax(0,1fr);grid-template-rows:188px minmax(0,1fr);overflow:hidden}
+  .cue-left{min-width:0;max-width:100%;min-height:0;overflow:hidden}
+  .cue-list{min-width:0;max-width:100%;min-height:0;overflow-y:scroll;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .cue-main{min-width:0;max-width:100%;min-height:0;width:100%;overflow:scroll;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .q-block{min-width:0;max-width:none}
+  .run-table{width:1330px;min-width:1330px;max-width:none}
+
+  .settings-shell{min-width:0;max-width:100%;width:100%;overflow:hidden}
+  .settings-detail{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .initial-page{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+  .initial-table-wrap{min-width:0;max-width:100%;width:100%;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+}
+
+/* v59: coarse-pointer landscape startup layout. Keep the tab row visible even when utility controls are wide. */
+html.tablet-landscape .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+html.tablet-landscape .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+html.tablet-landscape .tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
+html.tablet-landscape .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+html.tablet-landscape .top-utility-strip>*{flex:0 0 auto}
+html.tablet-landscape .history-actions,html.tablet-landscape .top-file-actions{margin-left:0;gap:4px}
+html.tablet-landscape .history-actions button,html.tablet-landscape .file-btn{height:36px;font-size:10px;padding:0 7px}
+html.tablet-landscape .save-state,html.tablet-landscape .app-title{display:none}
+html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+
+/* v2.1: layout is correct on the first landscape paint, without waiting for rotation. */
+@media (orientation:landscape) and (any-pointer:coarse){
+.topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+.tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+.tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
+.top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.top-utility-strip>*{flex:0 0 auto}
+.history-actions,.top-file-actions{margin-left:0;gap:4px}
+.history-actions button,.file-btn{height:36px;font-size:10px;padding:0 7px}
+.save-state,.app-title{display:none}
+.tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+}
+
+/* v60: consolidated I/O sheet + share code */
+/* v61: consecutive GO runtime mixing in section monitor */
+/* v62: screen wake lock toggle for rehearsal/tablet use */
+/* v63: fix share-code restore UI binding; avoid DOM id/function global name collisions */
+/* v64: project name, last edit time, and share text */
+/* v65: project details are edited in the I/O sheet. */
+.file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
+.wake-lock-btn{background:#3b4549;border-color:#6b7a80;font-weight:800;white-space:nowrap}.wake-lock-btn.active{background:#176b3b;border-color:#47c77a;color:#fff}.wake-lock-btn.waiting{background:#66521b;border-color:#caa63a;color:#fff}.wake-lock-btn:disabled{opacity:.55}
+.io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
+.io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;min-width:0;overscroll-behavior:contain;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
+.io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;min-width:0;white-space:normal;overflow-wrap:anywhere;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
+.share-box{display:none;margin-top:10px;padding:10px;border:1px solid #586164;border-radius:7px;background:#171c1e}.share-box.open{display:block}.share-box textarea{width:100%;min-height:145px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:9px;font:11px/1.45 monospace;word-break:break-all}.share-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.share-actions button{flex:1 1 140px;min-height:38px}.share-message{margin-top:7px;font-size:11px;color:#aeb9bd;line-height:1.5}.share-message.ok{color:#8fd6a4}.share-message.error{color:#ff8f98}.share-meta{font-size:11px;color:#aeb9bd}
+.io-project-info{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #586164;border-radius:6px;background:#171c1e}
+.io-project-name{display:flex;flex:1 1 300px;min-width:0;flex-direction:column;gap:5px;font-size:12px;color:#dce5e8}
+.io-project-name input{width:100%;min-width:0;height:38px;padding:6px 9px;background:#202528;color:#fff;border:1px solid #687479;border-radius:4px}
+.io-updated-at{flex:1 1 220px;min-width:0;line-height:1.6}
+@media(max-width:560px){.io-grid{grid-template-columns:1fr}.io-modal{padding:6px}.io-sheet{max-height:calc(100dvh - 12px)}}
+
+/* v2.0: installed auxiliary equipment stays outside section geometry. */
+#otherPermanentGroup{margin-top:10px;min-width:0}
+#otherPermanentGroup summary{cursor:pointer;min-height:38px;padding:8px 3px;font-size:12px;font-weight:700;color:#e8eef0}
+#otherPermanentList{min-width:0}
+#otherPermanentGroup:not([open]) #otherPermanentList{display:none}
+.permanent-usage{margin:0 0 10px;padding:10px;border:1px solid #6b7a80;background:#303a3e}
+.permanent-usage[hidden]{display:none}
+.permanent-usage label{display:flex;gap:8px;align-items:center;min-height:32px;font-weight:700}
+.permanent-usage input{width:20px;height:20px}
+.permanent-usage .small-muted{line-height:1.6;margin-top:4px;overflow-wrap:anywhere}
+@media (orientation:portrait) and (max-width:1024px){
+ .settings-shell{grid-template-rows:auto minmax(0,1fr)}
+ .device-list{min-height:76px;max-height:220px}
+ #otherPermanentGroup{margin-top:2px}
+ #otherPermanentGroup summary{min-height:36px;padding:8px 3px}
+ #otherPermanentList{display:flex;gap:4px;height:64px;overflow-x:auto;overflow-y:hidden;align-items:stretch;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+}
+
+/* v2.1: purpose-based I/O groups, in the same DOM order at every width. */
+.io-section{margin-top:16px;padding-top:12px;border-top:1px solid #465155}
+.io-section h4{margin:0 0 8px;font-size:13px;line-height:1.5;color:#dce5e8}
+.io-grid.io-single{grid-template-columns:minmax(0,1fr)}
+.io-reset{margin-top:26px;padding-top:18px;border-top:1px solid #6b777c}
+.io-reset button{width:100%;min-height:44px;padding:8px;background:#7d292e;color:#fff;border:1px solid #b85259;border-radius:5px;font:inherit;cursor:pointer}
+.io-reset button:hover{background:#96343b}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tab-strip">
+    <button class="tab-btn active" data-tab="monitor">断面モニタ</button>
+    <button class="tab-btn" data-tab="cue">Cue</button>
+    <button class="tab-btn" data-tab="settings">装置設定</button>
+    <button class="tab-btn" data-tab="initial">初期位置</button>
+    <button class="tab-btn" data-tab="shakuCalc">尺計算</button>
+  </div>
+  <div class="top-utility-strip">
+    <div class="history-actions">
+      <button id="undoBtn" title="戻す (Ctrl+Z)" disabled>↶ 戻す</button>
+      <button id="redoBtn" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷ やり直す</button>
+    </div>
+    <div class="top-file-actions">
+      <button id="openIoBtn" class="file-btn primary-io">入出力</button>
+      <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
+    </div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.1</div>
+  </div>
+</div>
+
+<div id="ioModal" class="io-modal" aria-hidden="true"><div class="io-sheet">
+  <div class="io-head"><h3>入出力</h3><div class="grow"></div><span class="share-meta">プロジェクト保存・CSV書出</span></div>
+  <div class="io-project-info">
+    <label class="io-project-name" for="projectNameInput">プロジェクト名
+      <input id="projectNameInput" type="text" maxlength="200" autocomplete="off" placeholder="名称未設定">
+    </label>
+    <div class="share-meta io-updated-at">最終更新日時: <span id="ioUpdatedAt"></span></div>
+  </div>
+  <section class="io-section" aria-label="保存・共有">
+    <h4>保存・共有</h4>
+    <div class="io-grid">
+      <button id="importShareBtn">共有コード読込</button>
+      <button id="exportShareBtn" class="primary">共有コード書出</button>
+      <button id="importJsonBtn">JSON読込</button>
+      <button id="exportJsonBtn">JSON保存</button>
+    </div>
+  </section>
+  <section class="io-section" aria-label="実機データの読込">
+    <h4>実機データの読込</h4>
+    <div class="io-grid io-single">
+      <button id="csvInitBtn" class="primary">装置CSV読込</button>
+    </div>
+  </section>
+  <section class="io-section" aria-label="記録表への書出">
+    <h4>記録表への書出</h4>
+    <div class="io-grid">
+      <button id="exportDeviceCsvBtn">装置CSV書出</button>
+      <button id="exportCueCsvBtn">キューCSV書出</button>
+    </div>
+  </section>
+  <div id="shareBox" class="share-box">
+    <div class="io-head"><strong id="shareTitle">共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
+    <div class="share-meta">プロジェクト名: <span id="shareProjectName"></span> ／ 最終更新日時: <span id="shareUpdatedAt"></span></div>
+    <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="SCUE1:... の共有コードをここへ貼り付け"></textarea>
+    <div class="share-actions"><button id="copyShareCode" class="primary">コードをコピー</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
+    <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
+  </div>
+  <div class="io-reset">
+    <button id="resetProjectBtn" class="danger">全データリセット</button>
+  </div>
+  <button id="closeIoBtn" class="io-close">閉じる</button>
+  <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
+  <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
+</div></div>
+
+<section id="monitor" class="tab active">
+  <div class="main-monitor">
+    <div class="monitor-top">
+      <div class="stage-card">
+        <div class="stage-toolbar compact">
+          <span class="stage-title">断面モニタ</span>
+          <button id="toggleMonitorCuePanel" class="stage-panel-toggle" type="button" aria-expanded="true">Cue一覧を畳む ▲</button>
+          <span class="stage-scale-label">縮尺</span><button id="stageScaleToggle" class="stage-scale-toggle" type="button" aria-pressed="false" title="全体表示 / 縦横等縮尺を切替">全体</button>
+          <span class="toolbar-q" id="nowQNum">001.00</span>
+          <span id="nowQName"></span><span id="monitorValidation" class="monitor-validation"></span>
+        </div>
+        <div class="stage-viewport" id="stageViewport"><div class="stage-canvas" id="stageCanvas"></div></div>
+      </div>
+    </div>
+    <div class="monitor-bottom">
+      <div class="monitor-cue-head">
+        <strong>Cue</strong>
+        <button id="prevQ">前Q</button>
+        <button id="resetQ">頭出し</button>
+        <button id="nextQ">次Q</button>
+        <div class="position-mode"><span class="mode-label">表示</span><button id="posModeToggle">ラベル</button></div>
+        <span class="control-separator"></span>
+        <button id="goBtn" class="go">GO</button>
+        <button id="pauseBtn">PAUSE</button>
+        <button id="stopBtn">STOP</button>
+        <span id="monitorClock" class="clock">0.0 s</span>
+        <input id="seek" class="timebar cue-seek" type="range" min="0" max="10" step="0.05" value="0">
+      </div>
+      <div id="monitorCueBrowser" class="monitor-cue-browser"></div>
+    </div>
+  </div>
+</section>
+
+<section id="cue" class="tab">
+  <div class="cue-layout">
+    <aside class="cue-left">
+      <div class="cue-head">Cue</div>
+      <div class="cue-list" id="cueList"></div>
+      <button id="newCueBtn">キュー作成</button>
+      <button id="newMemoBtn">メモ挿入</button>
+      <button id="pasteCueBtn">Q貼り付け</button>
+      <button id="renumberOpenBtn">Q番号振り直し</button>
+    </aside>
+    <main class="cue-main" id="cueEditor"></main>
+  </div>
+</section>
+
+<section id="settings" class="tab">
+  <div class="settings-shell">
+    <aside class="device-list"><h3>装置</h3><div id="deviceList"></div><details id="otherPermanentGroup"><summary>その他の常設装置</summary><div id="otherPermanentList"></div></details></aside>
+    <main class="settings-detail">
+      <h2 id="setTitle" style="margin-top:0">B1</h2>
+      <div class="hanging-tools">
+        <button id="copyHangingBtn">吊り物コピー</button>
+        <button id="cutHangingBtn">カット</button>
+        <button id="pasteHangingBtn" disabled>貼り付け</button>
+        <button id="deleteHangingBtn" class="danger">削除</button>
+        <span id="hangingClipState" class="hanging-clip-state">コピーなし</span>
+      </div>
+      <div id="csvStateNotice" class="small-muted" style="margin-bottom:8px">初回は上部の「装置CSV読込」から装置設定を作成できます。</div>
+      <div id="permanentUsagePanel" class="permanent-usage" hidden>
+        <label><input id="permanentEnabledInput" type="checkbox"> 使用する</label>
+        <div id="permanentUsageReason" class="small-muted"></div>
+      </div>
+      <div id="specialNotice"></div>
+      <div class="settings-grid">
+        <div class="field"><label>機構名称</label><input id="s_id" readonly></div>
+        <div class="field"><label>吊物名称</label><input id="s_item"></div>
+        <div class="field"><label>道具高さ</label><input id="s_height" type="number" min="0"><div class="small-muted">mm</div></div>
+        <div class="field"><label>桁吊り</label><input id="s_hang" type="number" min="0" value="0"><div class="small-muted">mm</div></div>
+        <div class="field"><label>表示色</label><select id="s_color">
+<option value="#333333">黒</option><option value="#6f767a">グレー</option><option value="#d9d9d9">白</option>
+<option value="#b51f2e">赤</option><option value="#d97b16">オレンジ</option><option value="#d6bf28">黄</option>
+<option value="#3d8b4f">緑</option><option value="#2e70b8">青</option><option value="#7652a3">紫</option>
+</select></div>
+        <div class="field"><label>透過率</label><input id="s_opacity" type="range" min="10" max="100" step="5" value="100"><div class="small-muted"><span id="s_opacityValue">100</span>%</div></div>
+      </div>
+      <h3>目標地ラベル</h3>
+      <table class="label-table"><thead><tr><th style="width:60px">No.</th><th>名称</th><th style="width:220px">位置 mm</th></tr></thead><tbody id="labelBody"></tbody></table>
+      <div class="small-muted">変更内容は自動保存されます。</div>
+    </main>
+  </div>
+</section>
+
+<section id="initial" class="tab">
+  <div class="initial-page">
+    <div class="initial-header">
+      <div>
+        <h2>初期位置</h2>
+        <div class="small-muted">公演開始時の各機構位置を設定します。ラベル選択または mm 直接入力ができます。</div>
+      </div>
+      <div class="initial-actions">
+        <button id="setAllTop" class="primary">全装置を最上限</button>
+        <button id="setEmptyUpper" class="primary secondary">空バトンを上限</button>
+        <span class="small-muted">変更内容は自動保存されます。</span>
+      </div>
+    </div>
+    <div class="initial-table-wrap">
+      <table class="initial-full-table">
+        <thead>
+          <tr><th>機構</th><th>吊物</th><th>初期ラベル</th><th>初期位置 mm</th><th>範囲</th></tr>
+        </thead>
+        <tbody id="initialBulkBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="shakuCalc" class="tab">
+  <div class="shaku-shell">
+    <div class="shaku-panel">
+      <h2>尺 ⇄ mm</h2>
+      <div class="shaku-note">実機換算：1尺 = 303mm。尺からmmへの変換結果は1mm単位で四捨五入します。</div>
+      <div class="shaku-grid">
+        <div class="shaku-field">
+          <label for="shakuInput">尺</label>
+          <input id="shakuInput" type="number" min="0" step="0.001" placeholder="例：18.5">
+        </div>
+        <div class="shaku-arrow">⇄</div>
+        <div class="shaku-field">
+          <label for="mmInput">mm</label>
+          <input id="mmInput" type="number" min="0" step="1" placeholder="例：5606">
+        </div>
+      </div>
+      <div id="shakuResult" class="shaku-result">尺またはmmを入力すると自動換算します。</div>
+
+      <div class="simple-calc">
+        <h3>簡易電卓</h3>
+        <div class="simple-calc-row">
+          <input id="calcA" type="number" step="any" placeholder="数値">
+          <select id="calcOp" aria-label="演算">
+            <option value="+">＋</option>
+            <option value="-">－</option>
+          </select>
+          <input id="calcB" type="number" step="any" placeholder="数値">
+          <div class="simple-calc-eq">＝</div>
+          <input id="calcResult" type="text" readonly placeholder="結果">
+        </div>
+        <div id="calcMessage" class="simple-calc-result">足し算・引き算だけの簡易電卓です。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+// Explicit DOM bindings; never depend on named window properties.
+const [undoBtn,redoBtn,openIoBtn,wakeLockBtn,saveState,ioModal,projectNameInput,ioUpdatedAt,csvInitBtn,exportDeviceCsvBtn,exportCueCsvBtn,exportShareBtn,importShareBtn,exportJsonBtn,importJsonBtn,resetProjectBtn,shareBox,shareTitle,shareMeta,shareProjectName,shareUpdatedAt,shareCode,copyShareCode,copyShareText,restoreShareCode,clearShareCode,shareMessage,closeIoBtn,csvInitFile,importJsonFile,monitor,toggleMonitorCuePanel,stageScaleToggle,nowQNum,nowQName,monitorValidation,stageViewport,stageCanvas,prevQ,resetQ,nextQ,posModeToggle,goBtn,pauseBtn,stopBtn,monitorClock,seek,monitorCueBrowser,cue,cueList,newCueBtn,newMemoBtn,pasteCueBtn,renumberOpenBtn,cueEditor,settings,deviceList,otherPermanentGroup,otherPermanentList,setTitle,copyHangingBtn,cutHangingBtn,pasteHangingBtn,deleteHangingBtn,hangingClipState,csvStateNotice,permanentUsagePanel,permanentEnabledInput,permanentUsageReason,specialNotice,s_id,s_item,s_height,s_hang,s_color,s_opacity,s_opacityValue,labelBody,initial,setAllTop,setEmptyUpper,initialBulkBody,shakuCalc,shakuInput,mmInput,shakuResult,calcA,calcOp,calcB,calcResult,calcMessage]=["undoBtn", "redoBtn", "openIoBtn", "wakeLockBtn", "saveState", "ioModal", "projectNameInput", "ioUpdatedAt", "csvInitBtn", "exportDeviceCsvBtn", "exportCueCsvBtn", "exportShareBtn", "importShareBtn", "exportJsonBtn", "importJsonBtn", "resetProjectBtn", "shareBox", "shareTitle", "shareMeta", "shareProjectName", "shareUpdatedAt", "shareCode", "copyShareCode", "copyShareText", "restoreShareCode", "clearShareCode", "shareMessage", "closeIoBtn", "csvInitFile", "importJsonFile", "monitor", "toggleMonitorCuePanel", "stageScaleToggle", "nowQNum", "nowQName", "monitorValidation", "stageViewport", "stageCanvas", "prevQ", "resetQ", "nextQ", "posModeToggle", "goBtn", "pauseBtn", "stopBtn", "monitorClock", "seek", "monitorCueBrowser", "cue", "cueList", "newCueBtn", "newMemoBtn", "pasteCueBtn", "renumberOpenBtn", "cueEditor", "settings", "deviceList", "otherPermanentGroup", "otherPermanentList", "setTitle", "copyHangingBtn", "cutHangingBtn", "pasteHangingBtn", "deleteHangingBtn", "hangingClipState", "csvStateNotice", "permanentUsagePanel", "permanentEnabledInput", "permanentUsageReason", "specialNotice", "s_id", "s_item", "s_height", "s_hang", "s_color", "s_opacity", "s_opacityValue", "labelBody", "initial", "setAllTop", "setEmptyUpper", "initialBulkBody", "shakuCalc", "shakuInput", "mmInput", "shakuResult", "calcA", "calcOp", "calcB", "calcResult", "calcMessage"].map(id=>document.getElementById(id));
+const STANDARD_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
+// Theater-installed equipment; usage is project data, section visibility is independent.
+const OTHER_PERMANENT_DEVICES=[{"id":"客SL","sourceId":"客SL","itemName":"","toolHeight":0,"hangOffset":0,"userMin":900,"userMax":9600,"machineMin":900,"machineMax":9600,"initialPosition":9600,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS1","sourceId":"上SS1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS1","sourceId":"下SS1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS2","sourceId":"上SS2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS2","sourceId":"下SS2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS3","sourceId":"上SS3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS3","sourceId":"下SS3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS4","sourceId":"上SS4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS4","sourceId":"下SS4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"点吊1","sourceId":"点吊1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊2","sourceId":"点吊2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊3","sourceId":"点吊3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊4","sourceId":"点吊4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊5","sourceId":"点吊5","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊6","sourceId":"点吊6","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊7","sourceId":"点吊7","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊8","sourceId":"点吊8","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊9","sourceId":"点吊9","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊10","sourceId":"点吊10","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false}];
+const OTHER_PERMANENT_IDS=new Set(OTHER_PERMANENT_DEVICES.map(d=>d.id));
+const BASE_DEVICES=[...STANDARD_DEVICES,...OTHER_PERMANENT_DEVICES];
+const DEVICE_CSV_IDS=[...STANDARD_DEVICES].reverse().map(d=>d.id).concat(OTHER_PERMANENT_DEVICES.map(d=>d.id));
+function isOtherPermanent(d){return !!d&&OTHER_PERMANENT_IDS.has(d.id)}
+function isDeviceEnabled(d){return !!d&&(!isOtherPermanent(d)||d.enabled===true)}
+function selectableDevices(){return devices.filter(isDeviceEnabled)}
+function sectionDevices(){return devices.filter(d=>!isOtherPermanent(d))}
+function deviceCsvOrder(){return DEVICE_CSV_IDS.map(id=>dev(id)).filter(isDeviceEnabled)}
+function normalizeInstalledDevices(source,projectCues=[]){
+ const byId=new Map(source.map(d=>[d.id,d]));
+ const referenced=new Set(projectCues.flatMap(q=>q.kind==='memo'?[]:(q.runs||[]).map(r=>r.device)));
+ const standard=source.filter(d=>!isOtherPermanent(d)).map(d=>JSON.parse(JSON.stringify(d)));
+ const extra=OTHER_PERMANENT_DEVICES.map(base=>{
+   const old=byId.get(base.id),d={...JSON.parse(JSON.stringify(base)),...JSON.parse(JSON.stringify(old||{}))};
+   // Machine characteristics cannot be redefined by project imports.
+   for(const k of ['id','sourceId','type','machineMin','machineMax','userMin','userMax'])d[k]=base[k];
+   d.enabled=old?.enabled===true||(old?.enabled==null&&referenced.has(base.id));
+   if(d.type==='constant'){d.defaultSpeed=167;d.defaultAcc=0.1;d.defaultDec=0.1}
+   d.initialPosition=Number.isFinite(+d.initialPosition)?Math.max(base.machineMin,Math.min(base.machineMax,+d.initialPosition)):base.machineMax;
+   return d;
+ });
+ return [...standard,...extra];
+}
+function permanentCueReferences(id){
+ return cues.filter(q=>!isMemoEntry(q)&&(q.runs||[]).some(r=>r.device===id)).map(q=>formatCueNumber(q.number)||q.number);
+}
+function permanentUsageRestriction(id){
+ const refs=permanentCueReferences(id);
+ return refs.length?`Cue ${refs.join('、')} で使用中です。対象の運転行を削除するか、別の装置へ変更するとOFFにできます。`:'';
+}
+function setPermanentDeviceUsage(id,enabled){
+ const d=dev(id);if(!isOtherPermanent(d))return false;
+ if(!enabled&&permanentUsageRestriction(id))return false;
+ if(d.enabled===enabled)return true;
+ pushUndoSnapshot();d.enabled=enabled;save();
+ renderDeviceList();renderSettings();renderInitialBulk();renderCueEditor();renderMonitorCueBrowser();
+ return true;
+}
+
+const KEY='stageCuePrototypeV3';
+const deep=x=>JSON.parse(JSON.stringify(x));
+let devices=deep(BASE_DEVICES);
+let selectedDevice='B1';
+let selectedCue=2;
+let running=false, startStamp=0, raf=null;
+let liveSession=null;
+let cues=[
+ {number:"001.00",name:"新規キュー",runs:[]}
+];
+let projectName='';
+let updatedAt=null;
+let lastProjectContent=JSON.stringify([projectName,devices,cues]);
+function validUpdatedAt(value){return typeof value==='string' && value.trim() && Number.isFinite(Date.parse(value))?value:null}
+function projectContent(){return JSON.stringify([projectName,devices,cues])}
+function syncProjectChange(){
+ const content=projectContent();
+ if(content===lastProjectContent)return;
+ updatedAt=new Date(Math.max(Date.now(),(Date.parse(updatedAt)||0)+1)).toISOString();
+ lastProjectContent=content;
+ refreshProjectInfo();
+}
+function shownProjectName(){return projectName.trim()||'名称未設定'}
+function shownUpdatedAt(){return updatedAt?new Date(updatedAt).toLocaleString('ja-JP'):'不明'}
+function refreshProjectInfo(forceInput=false){
+ const input=document.getElementById('projectNameInput');
+ if(input && input.value!==projectName && (forceInput || document.activeElement!==input))input.value=projectName;
+ document.getElementById('shareProjectName').textContent=shownProjectName();
+ for(const id of ['ioUpdatedAt','shareUpdatedAt'])document.getElementById(id).textContent=shownUpdatedAt();
+}
+function safeProjectFilename(){
+ const name=projectName.normalize('NFKC').replace(/[\x00-\x1f\x7f<>:"/\\|?*]/g,'_').replace(/[.\s]+$/g,'').trim();
+ return Array.from(name).slice(0,60).join('').replace(/[.\s]+$/g,'')||'stage_project';
+}
+let livePositions={};
+let selectedListIndex=0;
+let positionDisplayMode='label';
+let stageScaleMode='fit';
+let cueClipboard=null;
+let hangingItemClipboard=null;
+let runClipboard=[];
+
+const WAKE_KEY='stageCuePrototypeWakeLockV1';
+let wakeLockSentinel=null;
+let wakeLockWanted=false;
+let wakeLockLastError='';
+try{wakeLockWanted=localStorage.getItem(WAKE_KEY)==='1'}catch{}
+function updateWakeLockButton(){
+ const b=document.getElementById('wakeLockBtn');if(!b)return;
+ const supported=!!navigator.wakeLock?.request;
+ b.classList.remove('active','waiting');
+ if(!supported){b.disabled=true;b.textContent='消灯防止 非対応';b.title='このブラウザは画面の消灯防止に対応していません';b.setAttribute('aria-pressed','false');return}
+ b.disabled=false;
+ const active=!!wakeLockSentinel&&!wakeLockSentinel.released;
+ b.setAttribute('aria-pressed',String(wakeLockWanted));
+ if(active){b.classList.add('active');b.textContent='消灯防止 ON';b.title='画面の自動消灯を防止しています。押すとOFFになります。'}
+ else if(wakeLockWanted){b.classList.add('waiting');b.textContent='消灯防止 待機';b.title=wakeLockLastError?`Wake Lock再取得待ち: ${wakeLockLastError}`:'画面復帰時に消灯防止を再取得します。'}
+ else{b.textContent='消灯防止 OFF';b.title='押すと画面の自動消灯を防止します。'}
+}
+async function acquireWakeLock(showError=false){
+ updateWakeLockButton();
+ if(!wakeLockWanted||document.visibilityState!=='visible'||!navigator.wakeLock?.request)return false;
+ if(wakeLockSentinel&&!wakeLockSentinel.released){updateWakeLockButton();return true}
+ try{
+   const sentinel=await navigator.wakeLock.request('screen');
+   wakeLockSentinel=sentinel;wakeLockLastError='';
+   sentinel.addEventListener('release',()=>{if(wakeLockSentinel===sentinel)wakeLockSentinel=null;updateWakeLockButton()});
+   updateWakeLockButton();return true;
+ }catch(err){
+   wakeLockSentinel=null;wakeLockLastError=String(err?.message||err||'取得できませんでした');updateWakeLockButton();
+   if(showError)alert('消灯防止を開始できませんでした。ブラウザの権限・省電力設定などを確認してください。');
+   return false;
+ }
+}
+async function setWakeLockWanted(wanted,showError=true){
+ wakeLockWanted=!!wanted;wakeLockLastError='';
+ try{localStorage.setItem(WAKE_KEY,wakeLockWanted?'1':'0')}catch{}
+ if(!wakeLockWanted){
+   const sentinel=wakeLockSentinel;wakeLockSentinel=null;
+   try{if(sentinel&&!sentinel.released)await sentinel.release()}catch{}
+   updateWakeLockButton();return;
+ }
+ await acquireWakeLock(showError);
+}
+function releaseWakeLockForBackground(){
+ const sentinel=wakeLockSentinel;wakeLockSentinel=null;
+ try{if(sentinel&&!sentinel.released)sentinel.release()}catch{}
+ updateWakeLockButton();
+}
+
+function isMemoEntry(q){return !!q && q.kind==='memo'}
+function normalizeCueEntries(){
+ cues.forEach(q=>{
+   if(isMemoEntry(q)){
+     q.text=String(q.text??q.name??'').trim();
+     delete q.number;
+     delete q.runs;
+   }else{
+     q.number=formatCueNumber(q.number)||'000.00';
+     q.runs=q.runs||[];
+     q.runs.forEach(r=>{
+       inferRunTargetMode(r);
+       const d=dev(r.device);
+       if(d?.type==='constant'){
+         r.speed=fixedDeviceSpeed(d);
+         r.acc=FIXED_ACC;
+         r.dec=FIXED_DEC;
+         r.use2=false;
+         r.pos2='';
+         r.speed2='';
+       }
+     });
+   }
+ });
+}
+function playableCueCount(){return cues.filter(q=>!isMemoEntry(q)).length}
+function findPlayableFrom(index,dir=1){
+ for(let i=index;i>=0&&i<cues.length;i+=dir){
+   if(!isMemoEntry(cues[i]))return i;
+ }
+ return -1;
+}
+function nextPlayableIndex(index){return findPlayableFrom(index+1,1)}
+function prevPlayableIndex(index){return findPlayableFrom(index-1,-1)}
+function closestPlayableIndex(index){
+ let n=findPlayableFrom(index,1);
+ if(n>=0)return n;
+ return findPlayableFrom(index,-1);
+}
+function previousPlayableNumber(index){
+ for(let i=Math.min(index,cues.length-1);i>=0;i--){
+   if(!isMemoEntry(cues[i]))return cues[i].number;
+ }
+ return '000.00';
+}
+function lastPlayableNumber(){
+ for(let i=cues.length-1;i>=0;i--){
+   if(!isMemoEntry(cues[i]))return cues[i].number;
+ }
+ return '000.00';
+}
+
+function escapeHtml(v){
+ return String(v??'')
+   .replace(/&/g,'&amp;')
+   .replace(/</g,'&lt;')
+   .replace(/>/g,'&gt;')
+   .replace(/"/g,'&quot;')
+   .replace(/'/g,'&#39;');
+}
+function load(){
+ try{
+  const raw=localStorage.getItem(KEY);
+  if(!raw)return;
+  const d=JSON.parse(raw);
+  const checked=validateProjectPayload(d);
+  if(!checked.ok)throw new Error(checked.msg);
+  devices=normalizeInstalledDevices(d.devices,d.cues);
+  cues=deep(d.cues);normalizeCueEntries();
+  if(!cues.length)cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+  projectName=typeof d.projectName==='string'?d.projectName:'';
+  updatedAt=validUpdatedAt(d.updatedAt);
+  lastProjectContent=projectContent();
+ }catch(e){
+  console.error('localStorage load failed',e);
+  if(typeof saveState!=='undefined'){saveState.textContent='保存データ読込失敗';saveState.classList.remove('saving');saveState.classList.add('error')}
+ }
+}
+let saveTimer=null;
+function save(){
+ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+ syncProjectChange();
+ try{
+  localStorage.setItem(KEY,JSON.stringify(projectPayload()));
+  if(typeof saveState!=='undefined'){saveState.textContent='保存済み';saveState.classList.remove('saving','error')}
+  return true;
+ }catch(e){
+  console.error('localStorage save failed',e);
+  if(typeof saveState!=='undefined'){saveState.textContent='保存失敗';saveState.classList.remove('saving');saveState.classList.add('error')}
+  return false;
+ }
+}
+function scheduleSave(){
+ syncProjectChange();
+ if(typeof saveState!=='undefined'){saveState.textContent='保存中…';saveState.classList.remove('error');saveState.classList.add('saving')}
+ clearTimeout(saveTimer);
+ saveTimer=setTimeout(()=>{saveTimer=null;save()},350);
+}
+function flushScheduledSave(){
+ if(saveTimer){clearTimeout(saveTimer);saveTimer=null;save();}
+}
+window.addEventListener('pagehide',flushScheduledSave);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushScheduledSave()});
+
+const HISTORY_LIMIT=50;
+let undoStack=[];
+let redoStack=[];
+let historyInputKey=null;
+let historyInputTimer=null;
+
+function historySnapshot(){
+ return {
+   projectName,
+   devices:deep(devices),
+   cues:deep(cues),
+   selectedDevice,
+   selectedCue,
+   selectedListIndex
+ };
+}
+function updateHistoryButtons(){
+ if(typeof undoBtn!=='undefined')undoBtn.disabled=undoStack.length===0;
+ if(typeof redoBtn!=='undefined')redoBtn.disabled=redoStack.length===0;
+}
+function endHistoryInputGroup(){
+ historyInputKey=null;
+ clearTimeout(historyInputTimer);
+ historyInputTimer=null;
+}
+function pushUndoSnapshot(){
+ endHistoryInputGroup();
+ undoStack.push(historySnapshot());
+ if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+ redoStack=[];
+ updateHistoryButtons();
+}
+function pushUndoSnapshotForInput(key){
+ if(historyInputKey!==key){
+   endHistoryInputGroup();
+   undoStack.push(historySnapshot());
+   if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+   redoStack=[];
+   historyInputKey=key;
+   updateHistoryButtons();
+ }
+ clearTimeout(historyInputTimer);
+ historyInputTimer=setTimeout(()=>{historyInputKey=null;historyInputTimer=null},700);
+}
+function clearEditHistory(){
+ undoStack=[];
+ redoStack=[];
+ endHistoryInputGroup();
+ updateHistoryButtons();
+}
+function restoreHistorySnapshot(s){
+ if(!s)return;
+ running=false;
+ cancelAnimationFrame(raf);
+ clearTimeout(saveTimer);
+
+ devices=normalizeInstalledDevices(s.devices,s.cues);
+ cues=deep(s.cues);
+ projectName=s.projectName??'';
+ normalizeCueEntries();
+
+ selectedDevice=dev(s.selectedDevice)?s.selectedDevice:(devices.find(d=>d.id==='B1')?.id||devices[0]?.id);
+ selectedListIndex=Math.max(0,Math.min(cues.length-1,+s.selectedListIndex||0));
+ selectedCue=Math.max(0,Math.min(cues.length-1,+s.selectedCue||0));
+ if(isMemoEntry(cues[selectedCue]))selectedCue=closestPlayableIndex(selectedCue);
+ if(selectedCue<0)selectedCue=findPlayableFrom(0,1);
+
+ save();
+ refreshProjectInfo(true);
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+
+ if(selectedCue>=0 && cues[selectedCue] && !isMemoEntry(cues[selectedCue])){
+   const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+   nowQNum.textContent=formatCueNumber(q.number)||'000.00';
+   nowQName.textContent=q.name;
+   seek.max=dur.toFixed(2);
+   seek.value=0;
+   monitorClock.textContent='0.0 s';
+   renderStage(0);
+   updateMonitorValidation();
+ }
+ updateHistoryButtons();
+}
+function undoEdit(){
+ if(!undoStack.length)return;
+ endHistoryInputGroup();
+ redoStack.push(historySnapshot());
+ if(redoStack.length>HISTORY_LIMIT)redoStack.shift();
+ const s=undoStack.pop();
+ restoreHistorySnapshot(s);
+}
+function redoEdit(){
+ if(!redoStack.length)return;
+ endHistoryInputGroup();
+ undoStack.push(historySnapshot());
+ if(undoStack.length>HISTORY_LIMIT)undoStack.shift();
+ const s=redoStack.pop();
+ restoreHistorySnapshot(s);
+}
+
+function resetProjectData(){
+ const ok=confirm(
+   '装置設定・初期位置・Cue・メモをすべて初期化します。\n\n' +
+   'この操作は元に戻せません。必要なら先にJSON保存または共有コード書出をしてください。\n\n' +
+   '全データをリセットしますか？'
+ );
+ if(!ok)return;
+
+ running=false;liveSession=null;
+ cancelAnimationFrame(raf);
+ clearTimeout(saveTimer);
+
+ // 劇場固有の機械構成・機械限界・LB/UHL等の固定仕様だけ残す。
+ devices=deep(BASE_DEVICES);
+ devices.forEach(d=>{
+   d.initialPosition=+d.machineMax;
+   if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#6f767a';
+   if(d.displayOpacity==null)d.displayOpacity=1;
+ });
+
+ // 画面の構造上、Cueを完全0件にはせず、空の001.00を1件だけ置く。
+ cues=[{number:'001.00',name:'新規キュー',runs:[]}];
+ projectName='';
+ updatedAt=null;
+
+ selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+ selectedCue=0;
+ selectedListIndex=0;
+ cueClipboard=null;
+ hangingItemClipboard=null;
+ runClipboard=[];
+ livePositions={};
+ positionDisplayMode='label';
+
+ localStorage.removeItem(KEY);
+ clearEditHistory();
+ save();
+ refreshProjectInfo();
+
+ const notice=document.getElementById('csvStateNotice');
+ if(notice)notice.textContent='リセット済み：装置CSVを読み込むと新しい仕込みを作成できます。';
+
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+ selectCue(0);
+
+ alert('全データをリセットしました。\n装置設定は空、初期位置は各装置の最上限です。');
+}
+
+function parseCsvLine(line){
+ const out=[];let cur='',quoted=false;
+ for(let i=0;i<line.length;i++){
+   const ch=line[i];
+   if(ch==='"'){
+     if(quoted && line[i+1]==='"'){cur+='"';i++;}
+     else quoted=!quoted;
+   }else if(ch===',' && !quoted){
+     out.push(cur);cur='';
+   }else{
+     cur+=ch;
+   }
+ }
+ out.push(cur);
+ return out;
+}
+function decodeCsvBuffer(buf){
+ // 実機出力は通常CP932/Shift-JIS。UTF-8(BOM含む)も受け付ける。
+ const bytes=new Uint8Array(buf);
+ if(bytes.length>=3 && bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF){
+   return new TextDecoder('utf-8').decode(buf);
+ }
+ try{
+   return new TextDecoder('utf-8',{fatal:true}).decode(buf);
+ }catch(e){
+   return new TextDecoder('shift-jis').decode(buf);
+ }
+}
+function isTargetCsvDevice(id){
+ return id==='割UD' || id==='暗転幕' || id==='UHL' ||
+        /^LB[1-3]$/.test(id) || /^B(?:[1-9]|1\d|2[0-7])$/.test(id) || OTHER_PERMANENT_IDS.has(id);
+}
+function normalizeCsvNumber(v){
+ if(v==null)return null;
+ const s=String(v).trim().replace(/,/g,'');
+ if(s==='')return null;
+ const n=Number(s);
+ return Number.isFinite(n)?n:null;
+}
+function deviceFromCsvRow(cols,oldDevice){
+ const id=(cols[0]||'').trim();
+ const itemName=(cols[1]||'').trim();
+ const height=normalizeCsvNumber(cols[3]) ?? 0;
+ const labels=[];
+ for(let i=0;i<10;i++){
+   const name=(cols[8+i*2]||'').trim();
+   const pos=normalizeCsvNumber(cols[9+i*2]);
+   if(name!=='' && pos!==null)labels.push({name,pos});
+ }
+ const dtype=BASE_DEVICES.find(d=>d.id===id)?.type||'baton';
+ const d=oldDevice?deep(oldDevice):{
+   id,sourceId:id,itemName:'',toolHeight:0,userMin:300,userMax:20300,
+   machineMin:300,machineMax:20300,labels:[],defaultSpeed:1000,
+   type:dtype,hangOffset:0,defaultAcc:2,defaultDec:2
+ };
+ d.id=id;d.sourceId=id;d.type=dtype;
+ d.itemName=itemName;
+ d.toolHeight=(dtype==='curtain'?10000:height);
+ if(!d.displayColor){
+   const n=itemName;
+   d.displayColor=dtype==='curtain'?'#b51f2e':
+     (/袖幕|引割|暗転幕|文字幕|ホリゾント|幕/.test(n)?'#40454a':
+     (/スクリーン|LED/.test(n)?'#d9d9d9':'#7b8790'));
+ }
+ if(d.displayOpacity==null){
+   d.displayOpacity=/袖幕/.test(itemName)?0.45:(/幕|文字幕/.test(itemName)?0.72:1);
+ }
+ d.labels=labels;
+ if(!oldDevice || !Number.isFinite(+oldDevice.initialPosition))d.initialPosition=+d.machineMax;
+ // Do not import speed/acceleration/deceleration from CSV.
+ if(dtype==='curtain'){
+   d.machineMin=0;d.machineMax=10100;d.machineMin=0;d.machineMax=10100;
+ }
+ if(dtype==='constant'){
+   d.defaultSpeed=fixedDeviceSpeed(d);d.defaultAcc=FIXED_ACC;d.defaultDec=FIXED_DEC;
+ }else{
+   d.defaultSpeed=d.defaultSpeed||1000;
+   d.defaultAcc=Number.isFinite(+d.defaultAcc)?+d.defaultAcc:2;
+   d.defaultDec=Number.isFinite(+d.defaultDec)?+d.defaultDec:2;
+ }
+ return d;
+}
+function importInitialSetupCsv(textCsv){
+ const lines=textCsv.replace(/\r\n?/g,'\n').split('\n').filter(x=>x.trim()!=='');
+ const parsed=lines.map(parseCsvLine);
+ const rows=parsed.filter(r=>isTargetCsvDevice((r[0]||'').trim()));
+ if(!rows.length){
+   alert('対象装置（標準装置、客SL、SS、点吊）が見つかりませんでした。');
+   return;
+ }
+ const oldMap=new Map(devices.map(d=>[d.id,d]));
+ const imported=new Map();
+ for(const row of rows){
+   const id=(row[0]||'').trim();
+   imported.set(id,deviceFromCsvRow(row,oldMap.get(id)));
+ }
+ // Preserve the theater's fixed display order; only setup fields come from the CSV.
+ devices=normalizeInstalledDevices(BASE_DEVICES.map(base=>{
+   const d=imported.get(base.id);
+   if(d)return d;
+   const old=oldMap.get(base.id);
+   return old?deep(old):deep(base);
+ }),cues);
+ selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+ save();
+ renderDeviceList();renderSettings();renderInitialBulk();renderCueEditor();renderStage(0);
+ const itemCount=[...imported.values()].filter(d=>(d.itemName||'').trim()!=='').length;
+ const labelCount=[...imported.values()].reduce((n,d)=>n+d.labels.length,0);
+ const notice=document.getElementById('csvStateNotice');
+ if(notice)notice.textContent=`CSV読込済み：${imported.size}機構 / 吊物名 ${itemCount}件 / ラベル ${labelCount}件`;
+ alert(`CSVから初期設定を作成しました。\n対象機構: ${imported.size}件\n吊物名あり: ${itemCount}件\nラベル: ${labelCount}件\n\n速度・加速・減速の列は読み込んでいません。`);
+}
+
+function csvCell(v){
+ if(v===null || v===undefined)return '';
+ const s=String(v);
+ return /[",\r\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;
+}
+function csvNumber(v,maxDecimals=6){
+ if(v===null || v===undefined || v==='')return '';
+ const n=Number(v);
+ if(!Number.isFinite(n))return '';
+ if(Math.abs(n-Math.round(n))<1e-9)return String(Math.round(n));
+ return n.toFixed(maxDecimals).replace(/0+$/,'').replace(/\.$/,'');
+}
+function csvPositionLabel(d,pos,preferredName=null){
+ const label=currentLabelName(d,pos,preferredName);
+ return label==='—'?'直入力':label;
+}
+function csvTargetLabel(d,r){
+ inferRunTargetMode(r);
+ if(r.targetMode && r.targetMode!=='direct'){
+   const l=d?.labels?.find(x=>x.name===r.targetMode);
+   if(l)return r.targetMode;
+ }
+ return '直入力';
+}
+function exportDeviceSetupCsv(){
+ // 記録用タッパ表へコピペしやすい形式。
+ // 舞台奥 → 舞台前の順。荷重はアプリで管理していないため空欄。
+ const ordered=deviceCsvOrder();
+
+ // 同時に存在するラベル同士は同じ列ペアに入れられない。
+ // ラベル名をノード、同一バトン内で共存するラベルを衝突関係として、
+ // 少ない列数で「同名ラベルは全バトンで同じ列」に揃える。
+ const names=[];
+ const seen=new Set();
+ const conflicts=new Map();
+ const firstOrder=new Map();
+
+ const addName=name=>{
+   if(!seen.has(name)){
+     seen.add(name);
+     firstOrder.set(name,names.length);
+     names.push(name);
+     conflicts.set(name,new Set());
+   }
+ };
+
+ ordered.forEach(d=>{
+   const rowNames=[];
+   const rowSeen=new Set();
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(!name)return;
+     addName(name);
+     if(!rowSeen.has(name)){rowSeen.add(name);rowNames.push(name);}
+   });
+   for(let i=0;i<rowNames.length;i++){
+     for(let j=i+1;j<rowNames.length;j++){
+       conflicts.get(rowNames[i]).add(rowNames[j]);
+       conflicts.get(rowNames[j]).add(rowNames[i]);
+     }
+   }
+ });
+
+ const slotOf=new Map();
+
+ // よく使うラベルは、記録表で見やすい位置を優先。
+ // 例：トビ = 1組目、カザリ = 2組目。
+ const seedSlot=(name,slot)=>{
+   if(!seen.has(name))return;
+   const occupied=[...slotOf.entries()].some(([other,s])=>
+     s===slot && conflicts.get(name)?.has(other)
+   );
+   if(!occupied)slotOf.set(name,slot);
+ };
+ seedSlot('トビ',0);
+ seedSlot('カザリ',1);
+
+ // 衝突の多いラベルから割り当てる簡易グラフ彩色。
+ const remaining=names
+   .filter(n=>!slotOf.has(n))
+   .sort((a,b)=>
+     (conflicts.get(b)?.size||0)-(conflicts.get(a)?.size||0) ||
+     (firstOrder.get(a)||0)-(firstOrder.get(b)||0)
+   );
+
+ remaining.forEach(name=>{
+   const used=new Set(
+     [...(conflicts.get(name)||[])]
+       .map(n=>slotOf.get(n))
+       .filter(v=>Number.isInteger(v))
+   );
+   let slot=0;
+   while(used.has(slot))slot++;
+   slotOf.set(name,slot);
+ });
+
+ let slotCount=0;
+ slotOf.forEach(slot=>{slotCount=Math.max(slotCount,slot+1)});
+
+ // 同一バトン内に「同名ラベル」が複数ある特殊ケース用に、
+ // 必要なときだけ追加の列ペアを末尾に確保する。
+ let duplicateExtra=0;
+ ordered.forEach(d=>{
+   const counts=new Map();
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(name)counts.set(name,(counts.get(name)||0)+1);
+   });
+   counts.forEach(count=>duplicateExtra=Math.max(duplicateExtra,Math.max(0,count-1)));
+ });
+ const totalSlots=slotCount+duplicateExtra;
+
+ const header=['バトン','吊り物名称','荷重'];
+ for(let i=0;i<totalSlots;i++){
+   header.push(`ラベル${i+1}`,`位置${i+1}(mm)`);
+ }
+ const rows=[header];
+
+ ordered.forEach(d=>{
+   const row=new Array(3+totalSlots*2).fill('');
+   row[0]=d.id;
+   row[1]=d.itemName||'';
+   // row[2] 荷重は空欄
+
+   const usedSlots=new Set();
+   const duplicateCounts=new Map();
+
+   (d.labels||[]).forEach(l=>{
+     const name=String(l?.name||'').trim();
+     if(!name || l.pos==='' || l.pos===null || l.pos===undefined)return;
+
+     const dup=duplicateCounts.get(name)||0;
+     duplicateCounts.set(name,dup+1);
+
+     let slot;
+     if(dup===0){
+       slot=slotOf.get(name);
+     }else{
+       // 同名2個目以降は末尾の追加枠へ。
+       slot=slotCount+(dup-1);
+       while(usedSlots.has(slot))slot++;
+     }
+     if(!Number.isInteger(slot))return;
+
+     usedSlots.add(slot);
+     row[3+slot*2]=name;
+     row[4+slot*2]=csvNumber(+l.pos);
+   });
+
+   rows.push(row);
+ });
+
+ const csv=rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`${safeProjectFilename()}_stage_tappa_${date}_${time}.csv`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+
+function exportCueSheetCsv(){
+ // 並びはユーザー提供キューシートを基準。Timeは本番進行時刻なので出力しない。
+ const header=[
+   'CUE','バトン/吊り物','現在','現在(ｍｍ)','方向','目標','目標(mm)',
+   '距離','動作時間','速度','％','加速','減速','ﾃﾞｨﾚｲ',
+   '2位置','2速度','2加減'
+ ];
+ const rows=[header];
+
+ cues.forEach((q,qi)=>{
+   if(isMemoEntry(q)){
+     const row=new Array(header.length).fill('');
+     row[1]=q.text||'';
+     rows.push(row);
+     return;
+   }
+
+   const startState=positionStateBeforeCue(qi),starts=startState.pos,startLabels=startState.labels;
+   const runs=q.runs||[];
+
+   // 運転行がないQもCUE番号だけは残す。
+   if(!runs.length){
+     const row=new Array(header.length).fill('');
+     row[0]=formatCueNumber(q.number)||'000.00';
+     rows.push(row);
+     return;
+   }
+
+   runs.forEach((r,ri)=>{
+     const d=dev(r.device);
+     if(!d)return;
+
+     syncRunTargetFromLabel(r);
+     const start=starts[r.device]??initialPosition(d);
+     const target=+r.target;
+     const distance=Math.abs(target-start);
+     const validation=validateRun(r,start);
+
+     const fixed=d.type==='constant';
+     const speed=fixed?fixedDeviceSpeed(d):(+r.speed||0);
+     const acc=fixed?FIXED_ACC:(+r.acc||0);
+     const dec=fixed?FIXED_DEC:(+r.dec||0);
+     const direction=target>start?'▲':target<start?'▼':'';
+
+     const row=[
+       ri===0?(formatCueNumber(q.number)||'000.00'):'',
+       `${r.device}${d.itemName?' '+d.itemName:''}`,
+       csvPositionLabel(d,start,startLabels[r.device]),
+       csvNumber(start),
+       direction,
+       csvTargetLabel(d,r),
+       csvNumber(target),
+       csvNumber(distance),
+       validation.ok?csvNumber(validation.total,1):'',
+       csvNumber(speed),
+       csvNumber(speed/1500,6),
+       csvNumber(acc,1),
+       csvNumber(dec,1),
+       (+r.delay||0)>0?csvNumber(+r.delay,1):'',
+       r.use2?csvNumber(+r.pos2):'',
+       r.use2?csvNumber(+r.speed2):'',
+       r.use2?csvNumber(transitionDisplayTime(speed,+r.speed2||0),1):''
+     ];
+     rows.push(row);
+   });
+ });
+
+ const csv=rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`${safeProjectFilename()}_stage_cue_sheet_${date}_${time}.csv`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+
+function projectPayload(){
+ syncProjectChange();
+ return {app:"stage-cue-simulator",formatVersion:1,projectName,updatedAt,savedAt:new Date().toISOString(),devices:deep(devices),cues:deep(cues)};
+}
+function bytesToBase64Url(bytes){let bin='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)bin+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function base64UrlToBytes(text){let x=String(text||'').replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');while(x.length%4)x+='=';const bin=atob(x),out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out}
+async function compressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
+async function decompressBytes(bytes){const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));return new Uint8Array(await new Response(stream).arrayBuffer())}
+async function makeShareCode(){const raw=new TextEncoder().encode(JSON.stringify(projectPayload()));if('CompressionStream' in window&&'DecompressionStream' in window){try{const packed=await compressBytes(raw);return {code:'SCUE1:G:'+bytesToBase64Url(packed),rawBytes:raw.length,codeBytes:packed.length,compressed:true}}catch(e){console.warn('share compression failed',e)}}return {code:'SCUE1:J:'+bytesToBase64Url(raw),rawBytes:raw.length,codeBytes:raw.length,compressed:false}}
+function extractShareCode(text){
+ const found=[...String(text||'').matchAll(/(?:^|[^A-Za-z0-9_-])(SCUE1:[GJ]:[A-Za-z0-9_-]+)(?![A-Za-z0-9_-])/g)].map(m=>m[1]);
+ if(!found.length)throw new Error('有効な形式のSCUE1共有コードが見つかりません');
+ if(found.length!==1)throw new Error('SCUE1共有コードが複数あります。1つだけ貼り付けてください');
+ return found[0];
+}
+async function parseShareCode(text){const compact=extractShareCode(text);const m=/^SCUE1:([GJ]):([A-Za-z0-9_-]+)$/.exec(compact);let bytes=base64UrlToBytes(m[2]);if(m[1]==='G'){if(!('DecompressionStream' in window))throw new Error('このブラウザは圧縮共有コードの読込に対応していません');bytes=await decompressBytes(bytes)}return JSON.parse(new TextDecoder().decode(bytes))}
+
+// Share-code UI: use explicit DOM references so element ids never compete with function names.
+const shareBoxEl=document.getElementById('shareBox');
+const shareTitleEl=document.getElementById('shareTitle');
+const shareMetaEl=document.getElementById('shareMeta');
+const shareCodeEl=document.getElementById('shareCode');
+const shareMessageEl=document.getElementById('shareMessage');
+
+function openShareBox(mode){refreshProjectInfo();shareBoxEl.classList.add('open');shareMessageEl.className='share-message';if(mode==='import'){shareTitleEl.textContent='共有コードを読込';shareMetaEl.textContent='';shareCodeEl.value='';shareMessageEl.textContent='共有コードまたは共有用テキストを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCodeEl.focus(),0)}}
+async function showExportShareCode(){openShareBox('export');shareTitleEl.textContent='共有コードを書出';shareMetaEl.textContent='作成中…';shareCodeEl.value='';shareMessageEl.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCodeEl.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMetaEl.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessageEl.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessageEl.className='share-message ok'}catch(e){shareMetaEl.textContent='';shareMessageEl.textContent='共有コードの作成に失敗しました: '+e.message;shareMessageEl.className='share-message error'}}
+async function copyTextToClipboard(value){
+ try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);return true}}catch(e){}
+ const temp=document.createElement('textarea');temp.value=value;temp.style.position='fixed';temp.style.opacity='0';document.body.appendChild(temp);
+ temp.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}temp.remove();return ok;
+}
+async function copyShareCodeText(){
+ try{const code=extractShareCode(shareCodeEl.value);const ok=await copyTextToClipboard(code);shareMessageEl.textContent=ok?'共有コードをコピーしました。':'自動コピーできませんでした。コード欄から手動でコピーしてください。';shareMessageEl.className='share-message '+(ok?'ok':'error')}
+ catch(e){shareMessageEl.textContent=e.message;shareMessageEl.className='share-message error'}
+}
+async function copyShareTextForSharing(){
+ try{
+  const code=extractShareCode(shareCodeEl.value);
+  const payload=await parseShareCode(code);
+  const name=typeof payload.projectName==='string'&&payload.projectName.trim()?payload.projectName.trim():'名称未設定';
+  const time=validUpdatedAt(payload.updatedAt)?new Date(payload.updatedAt).toLocaleString('ja-JP'):'不明';
+  const text=`プロジェクト名: ${name.replace(/[\r\n]+/g,' ')}\n最終更新日時: ${time}\n\n${code}`;
+  const ok=await copyTextToClipboard(text);
+  shareMessageEl.textContent=ok?'共有用テキストをコピーしました。':'自動コピーできませんでした。';shareMessageEl.className='share-message '+(ok?'ok':'error');
+ }catch(e){shareMessageEl.textContent=e.message;shareMessageEl.className='share-message error'}
+}
+async function restoreShareCodeFromText(){const code=shareCodeEl.value.trim();if(!code){shareMessageEl.textContent='共有コードを貼り付けてください。';shareMessageEl.className='share-message error';return}shareMessageEl.textContent='共有コードを確認しています…';shareMessageEl.className='share-message';try{const obj=await parseShareCode(code);const checked=validateProjectPayload(obj);if(!checked.ok)throw new Error(checked.msg);if(importProjectJson(obj,{silent:true})){clearEditHistory();shareMessageEl.textContent='共有コードからプロジェクトを復元しました。';shareMessageEl.className='share-message ok';shareMetaEl.textContent='読込完了'}}catch(e){shareMessageEl.textContent='共有コードを読み込めません: '+e.message;shareMessageEl.className='share-message error'}}
+
+function exportProjectJson(){
+ const payload=projectPayload();
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const a=document.createElement('a');
+ const now=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ const date=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const time=`${pad(now.getHours())}${pad(now.getMinutes())}`;
+ a.href=URL.createObjectURL(blob);
+ a.download=`${safeProjectFilename()}_stage_sim_${date}_${time}.json`;
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},0);
+}
+function validateProjectPayload(obj){
+ if(!obj || typeof obj!=='object')return {ok:false,msg:'JSONのルート形式が不正です。'};
+ if(obj.projectName!=null && typeof obj.projectName!=='string')return {ok:false,msg:'projectName が文字列ではありません。'};
+ if(obj.updatedAt!=null && !validUpdatedAt(obj.updatedAt))return {ok:false,msg:'updatedAt が日時ではありません。'};
+ if(obj.app!=null && obj.app!=='stage-cue-simulator')return {ok:false,msg:'別のアプリのJSONです。'};
+ if(obj.formatVersion!=null && (!Number.isInteger(+obj.formatVersion) || +obj.formatVersion<1 || +obj.formatVersion>1)){
+   return {ok:false,msg:`未対応のJSON形式です（formatVersion: ${obj.formatVersion}）。`};
+ }
+ if(!Array.isArray(obj.devices) || obj.devices.length===0)return {ok:false,msg:'devices が空、または配列ではありません。'};
+ if(!Array.isArray(obj.cues))return {ok:false,msg:'cues が配列ではありません。'};
+
+ const ids=new Set();
+ for(let i=0;i<obj.devices.length;i++){
+   const d=obj.devices[i];
+   if(!d || typeof d!=='object')return {ok:false,msg:`devices[${i}] の形式が不正です。`};
+   const id=String(d.id??'').trim();
+   if(!id)return {ok:false,msg:`devices[${i}] の機構IDが空です。`};
+   if(ids.has(id))return {ok:false,msg:`機構ID「${id}」が重複しています。`};
+   ids.add(id);
+   if(!['baton','curtain','constant'].includes(d.type))return {ok:false,msg:`${id}: type が不正です。`};
+   if(isOtherPermanent(d)&&d.enabled!=null&&typeof d.enabled!=='boolean')return {ok:false,msg:`${id}: 使用ON/OFFが不正です。`};
+   if(d.itemName!=null && typeof d.itemName!=='string')return {ok:false,msg:`${id}: 吊り物名称が不正です。`};
+   for(const k of ['machineMin','machineMax','userMin','userMax','toolHeight','hangOffset','defaultSpeed','defaultAcc','defaultDec']){
+     if(d[k]!=null && d[k]!=='' && !Number.isFinite(+d[k]))return {ok:false,msg:`${id}: ${k} が数値ではありません。`};
+   }
+   if(!Number.isFinite(+d.machineMin) || !Number.isFinite(+d.machineMax) || +d.machineMin>+d.machineMax){
+     return {ok:false,msg:`${id}: 機械限界が不正です。`};
+   }
+   if(d.displayColor!=null && typeof d.displayColor!=='string')return {ok:false,msg:`${id}: 表示色が不正です。`};
+   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 透過率が不正です。`};
+   if(!Array.isArray(d.labels))return {ok:false,msg:`${id}: labels が配列ではありません。`};
+   for(let li=0;li<d.labels.length;li++){
+     const l=d.labels[li];
+     if(!l || typeof l!=='object' || !Number.isFinite(+l.pos))return {ok:false,msg:`${id}: ラベル${li+1}の位置が不正です。`};
+     if(typeof l.name!=='string')return {ok:false,msg:`${id}: ラベル${li+1}の名称が不正です。`};
+   }
+   if(d.initialPosition!=null && !Number.isFinite(+d.initialPosition))return {ok:false,msg:`${id}: 初期位置が不正です。`};
+   if(d.initialLabelName!=null && typeof d.initialLabelName!=='string')return {ok:false,msg:`${id}: 初期位置ラベルが不正です。`};
+ }
+
+ for(let qi=0;qi<obj.cues.length;qi++){
+   const q=obj.cues[qi];
+   if(!q || typeof q!=='object')return {ok:false,msg:`cues[${qi}] の形式が不正です。`};
+   if(q.kind==='memo'){
+     if(q.text!=null && typeof q.text!=='string')return {ok:false,msg:`メモ ${qi+1}: text が文字列ではありません。`};
+     continue;
+   }
+   if(formatCueNumber(q.number)==null)return {ok:false,msg:`Cue ${qi+1}: Q番号が不正です。`};
+   if(q.name!=null && typeof q.name!=='string')return {ok:false,msg:`Cue ${qi+1}: Cue名称が不正です。`};
+   if(!Array.isArray(q.runs))return {ok:false,msg:`Cue ${qi+1}: runs が配列ではありません。`};
+   for(let ri=0;ri<q.runs.length;ri++){
+     const r=q.runs[ri];
+     if(!r || typeof r!=='object')return {ok:false,msg:`Cue ${qi+1} / 運転${ri+1}: 形式が不正です。`};
+     if(typeof r.device!=='string' || !ids.has(r.device))return {ok:false,msg:`Cue ${qi+1}: 未登録機構「${String(r.device??'')}」を参照しています。`};
+     if(OTHER_PERMANENT_IDS.has(r.device)&&obj.devices.find(d=>d.id===r.device)?.enabled===false)return {ok:false,msg:`${r.device}: Cueで使用中のためOFFにできません。`};
+     if(r.targetMode!=null && typeof r.targetMode!=='string')return {ok:false,msg:`Cue ${qi+1} / ${r.device}: targetMode が不正です。`};
+     if(!Number.isFinite(+r.target))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: 目標位置が不正です。`};
+     for(const k of ['speed','acc','dec','delay']){
+       if(r[k]!=null && r[k]!=='' && !Number.isFinite(+r[k]))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: ${k} が数値ではありません。`};
+     }
+     if(r.use2){
+       if(!Number.isFinite(+r.pos2) || !Number.isFinite(+r.speed2))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: 2位置・2速度が不正です。`};
+     }
+   }
+ }
+ return {ok:true};
+}
+function importProjectJson(obj,{silent=false}={}){
+ const checked=validateProjectPayload(obj);
+ if(!checked.ok){if(!silent)alert('このJSONは読み込めません。\n'+checked.msg);return false;}
+
+ const before={devices:deep(devices),cues:deep(cues),projectName,updatedAt,lastProjectContent,selectedCue,selectedListIndex,selectedDevice};
+ try{
+   const nextDevices=normalizeInstalledDevices(obj.devices,obj.cues);
+   const nextCues=deep(obj.cues);
+   devices=nextDevices;
+   cues=nextCues;
+   projectName=obj.projectName??'';
+   updatedAt=validUpdatedAt(obj.updatedAt);
+   normalizeCueEntries();
+   if(!cues.length)cues=[{number:"001.00",name:"新規キュー",runs:[]}];
+   lastProjectContent=projectContent();
+   refreshProjectInfo();
+   selectedCue=0;selectedListIndex=0;
+   selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
+   const saved=save();
+   renderDeviceList();
+   renderSettings();
+   renderInitialBulk();
+   renderCueList();
+   selectCue(0);
+   if(!silent)alert(saved?'JSONを読み込みました。':'JSONを読み込みましたが、ローカル保存に失敗しました。JSON書出でバックアップしてください。');
+   return true;
+ }catch(err){
+   console.error('JSON import commit failed',err);
+   devices=before.devices;cues=before.cues;projectName=before.projectName;updatedAt=before.updatedAt;lastProjectContent=before.lastProjectContent;selectedCue=before.selectedCue;selectedListIndex=before.selectedListIndex;selectedDevice=before.selectedDevice;
+   refreshProjectInfo();
+   try{renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(selectedCue);}catch(e){console.error(e)}
+   if(!silent)alert('JSONの読み込み処理中にエラーが発生したため、変更を取り消しました。');
+   return false;
+ }
+}
+function dev(id){return devices.find(d=>d.id===id)}
+function labelPos(d,name){const l=d.labels.find(x=>x.name===name);return l?+l.pos:null}
+function currentLabelName(d,pos,preferredName=null){
+ if(!d||!Array.isArray(d.labels))return '—';
+ const matches=d.labels.filter(x=>Math.abs((+x.pos)-(+pos))<=1);
+ if(preferredName){
+   const preferred=matches.find(x=>x.name===preferredName);
+   if(preferred)return preferred.name;
+ }
+ // A numeric position alone cannot identify which label was intended when labels overlap.
+ return matches.length===1?matches[0].name:'—';
+}
+function positionDisplayText(d,pos,preferredName=null){
+ const mm=Math.round(+pos||0);
+ if(positionDisplayMode==='mm')return `${mm} mm`;
+ const label=currentLabelName(d,pos,preferredName);
+ return label==='—'?`${mm} mm`:label;
+}
+function initialPosition(d){
+ if(Number.isFinite(+d.initialPosition)) return +d.initialPosition;
+ return +d.machineMax;
+}
+function inferredInitialLabelName(d){
+ if(!d||!Array.isArray(d.labels))return null;
+ const pos=initialPosition(d);
+ if(d.initialLabelName && d.labels.some(l=>l.name===d.initialLabelName && Math.abs(+l.pos-pos)<=1))return d.initialLabelName;
+ const matches=d.labels.filter(l=>Math.abs(+l.pos-pos)<=1);
+ return matches.length===1?matches[0].name:null;
+}
+function buildInitial(){const o={};devices.forEach(d=>o[d.id]=initialPosition(d));return o}
+function buildInitialLabels(){const o={};devices.forEach(d=>o[d.id]=inferredInitialLabelName(d));return o}
+function cueDeviceCounts(index){
+ const counts=new Map();
+ for(const r of cues[index]?.runs||[]){
+   const id=String(r.device??'');
+   counts.set(id,(counts.get(id)||0)+1);
+ }
+ return counts;
+}
+function positionStateBeforeCue(index){
+ const pos=buildInitial(),labels=buildInitialLabels();
+ for(let i=0;i<index;i++){
+   if(isMemoEntry(cues[i]))continue;
+   const counts=cueDeviceCounts(i);
+   for(const r of cues[i].runs||[]){
+     if((counts.get(String(r.device??''))||0)>1)continue;
+     const start=pos[r.device];
+     const v=validateRun(r,start);
+     if(v.ok){
+       pos[r.device]=+r.target;
+       const d=dev(r.device);
+       labels[r.device]=(r.targetMode && r.targetMode!=='direct' && currentLabelName(d,+r.target,r.targetMode)!=='—')?r.targetMode:null;
+     }
+   }
+ }
+ return {pos,labels};
+}
+function positionBeforeCue(index){return positionStateBeforeCue(index).pos}
+function labelsBeforeCue(index){return positionStateBeforeCue(index).labels}
+const MAX_SPEED=1500;
+const MAX_ACCEL=750;
+const FIXED_ACC=0.1;
+const FIXED_DEC=0.1;
+function fixedDeviceSpeed(d){
+ return d && /^LB[1-3]$/.test(d.id)?83:167;
+}
+
+function floorTenthSafe(n){return Math.floor((n+1e-9)*10)/10}
+function machineBaseTime(distance,speed){return Math.floor((distance/speed)*10+1e-9)/10}
+function transitionDisplayTime(v1,v2){return Math.floor((Math.abs(v1-v2)/1000)*10+1e-9)/10}
+function minRampTime(speed){return Math.ceil((speed/MAX_ACCEL)*10-1e-9)/10}
+function between(p,a,b){return p>=Math.min(a,b)&&p<=Math.max(a,b)}
+
+// Entering a desired operation time in the Cue editor recalculates the primary speed.
+// Operation time excludes delay; delay is displayed and handled independently.
+function solvePrimarySpeedFromTime(r,start,requestedTime){
+ const d=dev(r.device);
+ if(!d)return {ok:false,msg:'機器を確認してください'};
+ if(d.type==='constant')return {ok:false,msg:`${d.id} は ${fixedDeviceSpeed(d)} mm/s 固定のため、時間から速度を逆算できません`};
+ const requested=Number(requestedTime);
+ if(!Number.isFinite(requested)||requested<=0)return {ok:false,msg:'運転タイムは0より大きい値を入力してください'};
+
+ const requestedShown=Math.round(requested*10)/10;
+ let best=null;
+ for(let speed=1;speed<=MAX_SPEED;speed++){
+   const candidate={...r,speed};
+   const v=validateRun(candidate,start);
+   if(!v.ok)continue;
+   const total=v.total;
+   const shown=Math.round(total*10)/10;
+   const displayDiff=Math.abs(shown-requestedShown);
+   const rawDiff=Math.abs(total-requested);
+   // The console can have multiple integer speeds that produce the same displayed
+   // operation time because time is handled at 0.1 s resolution. In that case,
+   // prefer the fastest valid speed (実機の速度逆算仕様に合わせる).
+   if(!best || displayDiff<best.displayDiff-1e-9 ||
+      (Math.abs(displayDiff-best.displayDiff)<1e-9 && speed>best.speed)){
+     best={speed,total,shown,displayDiff,rawDiff};
+   }
+ }
+ if(!best)return {ok:false,msg:'現在の位置・加速・減速・2位置設定では成立する速度がありません'};
+ return {...best,ok:true,exact:best.displayDiff<0.049};
+}
+
+function validateRun(r,start){
+ const d=dev(r.device);
+ if(!d)return {ok:false,msg:'機器を確認してください'};
+ if(!isDeviceEnabled(d))return {ok:false,msg:`${d.id} は使用OFFです。装置設定でONにしてください`};
+ syncRunTargetFromLabel(r);
+ const end=+r.target;
+ const delay=Number(r.delay??0);
+ if(!Number.isFinite(delay) || delay<0)return {ok:false,msg:'ディレイは0秒以上にしてください'};
+ if(!Number.isFinite(start)||!Number.isFinite(end))return {ok:false,msg:'現在地・目的地を確認してください'};
+ if(start===end)return {ok:false,msg:'現在地と目的地が同じです'};
+
+ const D=Math.abs(end-start);
+ if(D<=0)return {ok:false,msg:'移動距離は0より大きくしてください'};
+ if(D>20000 && d.type!=='curtain')return {ok:false,msg:'移動距離が実機範囲（最大20000 mm）を超えています'};
+
+ const lo=+d.machineMin,hi=+d.machineMax;
+ if(Number.isFinite(lo)&&Number.isFinite(hi)&&(start<lo||start>hi||end<lo||end>hi)){
+   return {ok:false,msg:`位置が装置限界（${Math.round(lo)}〜${Math.round(hi)} mm）外です`};
+ }
+
+ // LB1-3: 83 mm/s fixed. UHL: 167 mm/s fixed. Acceleration/deceleration are fixed at 0.1 s.
+ if(d.type==='constant'){
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const total=Math.max(
+     FIXED_ACC+FIXED_DEC,
+     machineBaseTime(D,fixedSpeed)+(FIXED_ACC+FIXED_DEC)/2
+   );
+   return {ok:true,total,tTrans:0,D,dAcc:fixedSpeed*FIXED_ACC/2,dDec:fixedSpeed*FIXED_DEC/2};
+ }
+
+ const v1=+r.speed,acc=+r.acc,dec=+r.dec;
+ if(![v1,acc,dec].every(Number.isFinite))return {ok:false,msg:'数値を確認してください'};
+ if(v1<=0||v1>MAX_SPEED)return {ok:false,msg:'基本速度が実機範囲（1〜1500 mm/s）外です'};
+ if(acc<0||dec<0)return {ok:false,msg:'加減速時間は0以上にしてください'};
+
+ const minRamp=minRampTime(v1);
+ if(acc+1e-9<minRamp)return {ok:false,msg:`基本速度 ${Math.round(v1)} mm/s には加速 ${minRamp.toFixed(1)} 秒以上が必要です`};
+ if(dec+1e-9<minRamp)return {ok:false,msg:`基本速度 ${Math.round(v1)} mm/s には減速 ${minRamp.toFixed(1)} 秒以上が必要です`};
+
+ if(!r.use2){
+   const dAcc=v1*acc/2,dDec=v1*dec/2;
+   if(D+1e-9<dAcc+dDec){
+     const minRequired=v1*minRamp;
+     if(D+1e-9>=minRequired){
+       const equalRampLimit=floorTenthSafe(D/v1);
+       return {ok:false,msg:`移動距離が不足しています。現在の設定では最低 ${(dAcc+dDec).toFixed(1)} mm 必要です。加速・減速を同じ値にするなら、各 ${equalRampLimit.toFixed(1)} 秒以下にすると成立します（実機最低は各 ${minRamp.toFixed(1)} 秒）`};
+     }
+     return {ok:false,msg:`移動距離が不足しています。加速・減速を実機最低の各 ${minRamp.toFixed(1)} 秒にしても最低 ${minRequired.toFixed(1)} mm 必要です。加減速調整だけでは解消できないため、速度を下げるか距離を延ばしてください`};
+   }
+   const total=machineBaseTime(D,v1)+(acc+dec)/2;
+   return {ok:true,total,tTrans:0,D};
+ }
+
+ const p2=+r.pos2,v2=+r.speed2;
+ if(!Number.isFinite(p2)||!Number.isFinite(v2))return {ok:false,msg:'2位置・2速度を確認してください'};
+ if(!between(p2,start,end)||p2===start||p2===end)return {ok:false,msg:'2位置が現在地と目的地の間にありません'};
+ if(v2<=0||v2>MAX_SPEED)return {ok:false,msg:'2速度が実機範囲（1〜1500 mm/s）外です'};
+
+ const minDecV2=minRampTime(v2);
+ if(dec+1e-9<minDecV2)return {ok:false,msg:`2速度 ${Math.round(v2)} mm/s からの減速には ${minDecV2.toFixed(1)} 秒以上が必要です`};
+
+ const D1=Math.abs(p2-start),D2=D-D1;
+ const dAcc=v1*acc/2;
+ const tBase=(D1-dAcc)/v1;
+ if(tBase<0)return {ok:false,msg:'2位置までに始動加速を完了できません'};
+
+ const tTrans=transitionDisplayTime(v1,v2);
+ const dTrans=((v1+v2)/2)*tTrans;
+ const dDec=v2*dec/2;
+ const tV2=(D2-dTrans-dDec)/v2;
+ if(tV2<0)return {ok:false,msg:'2位置から目的地までの距離が不足しています'};
+
+ const tP2=acc+tBase;
+ const total=tP2+tTrans+tV2+dec;
+ return {ok:true,total,tTrans,D,D1,D2,tBase,tP2,tV2,dAcc,dTrans,dDec};
+}
+
+function cueValidation(index){
+ const starts=positionBeforeCue(index),errors=[];
+ const counts=cueDeviceCounts(index);
+ (cues[index]?.runs||[]).forEach((r,i)=>{
+   if((counts.get(String(r.device??''))||0)>1){
+     errors.push({index:i,device:r.device,msg:'同一Cue内で同じ機器が重複しています'});
+     return;
+   }
+   const v=validateRun(r,starts[r.device]);
+   if(!v.ok)errors.push({index:i,device:r.device,msg:v.msg});
+ });
+ return errors;
+}
+
+function cueDuration(cue,index){
+ const starts=positionBeforeCue(index),counts=cueDeviceCounts(index);let mx=0;
+ for(const r of cue.runs||[]){
+   if((counts.get(String(r.device??''))||0)>1)continue;
+   const v=validateRun(r,starts[r.device]);
+   if(v.ok)mx=Math.max(mx,v.total+(+r.delay||0));
+ }
+ return Math.max(mx,0.1);
+}
+
+function motionPos(start,end,speed,acc,dec,t){
+ const sign=end>=start?1:-1,D=Math.abs(end-start);
+ if(D===0)return end;
+ speed=Math.max(1,speed);acc=Math.max(0,acc);dec=Math.max(0,dec);
+ const dA=speed*acc/2,dD=speed*dec/2,dC=Math.max(0,D-dA-dD);
+ const tC=dC/speed,total=acc+tC+dec;
+ if(t<=0)return start;if(t>=total)return end;
+ let x=0;
+ if(acc>0&&t<acc)x=.5*(speed/acc)*t*t;
+ else if(t<acc+tC)x=dA+speed*(t-acc);
+ else{const u=t-acc-tC;x=dA+dC+speed*u-.5*(dec>0?speed/dec:0)*u*u}
+ return start+sign*x;
+}
+
+function runPositionAt(r,start,t){
+ const d=dev(r.device);if(!d)return start;
+ const vr=validateRun(r,start);
+ if(!vr.ok)return start;
+ const delay=+r.delay||0;if(t<=delay)return start;
+ const lt=t-delay,end=+r.target;
+
+ if(d.type==='constant'){
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const D=Math.abs(end-start);
+   const dA=fixedSpeed*FIXED_ACC/2,dD=fixedSpeed*FIXED_DEC/2;
+   const dC=Math.max(0,D-dA-dD);
+   const physical=FIXED_ACC+dC/fixedSpeed+FIXED_DEC;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   return motionPos(start,end,fixedSpeed,FIXED_ACC,FIXED_DEC,scaled);
+ }
+
+ const v1=+r.speed,acc=+r.acc,dec=+r.dec;
+ if(!r.use2){
+   // Display time follows the machine's 0.1 s truncation.
+   // Position remains a continuous acceleration/constant/deceleration model,
+   // scaled so it reaches the destination at the displayed completion time.
+   const physical=Math.abs(end-start)/v1+(acc+dec)/2;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   return motionPos(start,end,v1,acc,dec,scaled);
+ }
+
+ const p2=+r.pos2,v2=+r.speed2,tTrans=vr.tTrans;
+ const sign=end>=start?1:-1;
+ const tP2=vr.tP2;
+
+ if(lt<=acc){
+   return start+sign*(acc>0?.5*(v1/acc)*lt*lt:0);
+ }
+ if(lt<=tP2){
+   return start+sign*(vr.dAcc+v1*(lt-acc));
+ }
+ if(lt<=tP2+tTrans){
+   if(tTrans<=0)return p2;
+   const u=lt-tP2,a2=(v2-v1)/tTrans;
+   return p2+sign*(v1*u+.5*a2*u*u);
+ }
+ if(lt<=tP2+tTrans+vr.tV2){
+   return p2+sign*(vr.dTrans+v2*(lt-tP2-tTrans));
+ }
+ const u=lt-(tP2+tTrans+vr.tV2);
+ if(u>=dec)return end;
+ const beforeDec=p2+sign*(vr.dTrans+v2*vr.tV2);
+ return beforeDec+sign*(v2*u-.5*(dec>0?v2/dec:0)*u*u);
+}
+
+function hangingBottomMM(d,batonPos){
+ if(!d)return null;
+ if(d.type==='curtain')return +batonPos;
+ const h=+d.toolHeight||0;
+ if(h<=0)return null;
+ return (+batonPos)-(+d.hangOffset||0)-h;
+}
+
+function runLiveState(r,start,t){
+ const d=dev(r.device);
+ if(!d)return {label:'—',cls:'wait',second:false};
+ if(t<=0)return {label:'スタンバイ',cls:'wait',second:false};
+ const vr=validateRun(r,start);
+ if(!vr.ok)return {label:'ERR',cls:'wait',second:false};
+ const delay=+r.delay||0;
+ if(t<delay)return {label:'ディレイ',cls:'wait',second:false};
+ const lt=Math.max(0,t-delay);
+ if(lt>=vr.total)return {label:'完了',cls:'done',second:false};
+
+ if(d.type==='constant'){
+   const fixedSpeed=fixedDeviceSpeed(d);
+   const D=Math.abs((+r.target)-start);
+   const dA=fixedSpeed*FIXED_ACC/2,dD=fixedSpeed*FIXED_DEC/2;
+   const dC=Math.max(0,D-dA-dD),tC=dC/fixedSpeed;
+   const physical=FIXED_ACC+tC+FIXED_DEC;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   if(scaled<FIXED_ACC)return {label:'加速中',cls:'run',second:false};
+   if(scaled>=FIXED_ACC+tC)return {label:'減速中',cls:'run',second:false};
+   return {label:'定速',cls:'run',second:false};
+ }
+
+ if(!r.use2){
+   const end=+r.target,v=+r.speed||1,acc=+r.acc||0,dec=+r.dec||0;
+   const D=Math.abs(end-start);
+   const dA=v*acc/2,dD=v*dec/2,dC=Math.max(0,D-dA-dD);
+   const tC=dC/v;
+   const physical=D/v+(acc+dec)/2;
+   const scaled=vr.total>0?lt*physical/vr.total:lt;
+   if(acc>0 && scaled<acc)return {label:'加速中',cls:'run',second:false};
+   if(dec>0 && scaled>=acc+tC)return {label:'減速中',cls:'run',second:false};
+   return {label:'定速',cls:'run',second:false};
+ }
+
+ const acc=+r.acc||0;
+ const tP2=vr.tP2;
+ const tTrans=vr.tTrans;
+ if(lt<=acc)return {label:'加速中',cls:'run',second:false};
+ if(lt<tP2)return {label:'1速度',cls:'run',second:false};
+ if(lt<tP2+tTrans)return {label:'2速度切替',cls:'switch',second:true};
+ if(lt<tP2+tTrans+vr.tV2)return {label:'2速度',cls:'second',second:true};
+ return {label:'減速中',cls:'second',second:true};
+}
+
+function updateMonitorRunLive(t=0){
+ const box=document.getElementById('monitorCueBrowser');
+ if(!box)return;
+ const q=cues[selectedCue];
+ if(!q)return;
+ const useRuntime=!!(liveSession&&liveSession.latestCueIndex===selectedCue);
+ const virtualNow=useRuntime?liveVirtualNow():null;
+ const runtimeP=useRuntime?runtimePositions(virtualNow):null;
+ const starts=useRuntime?null:positionBeforeCue(selectedCue);
+ (q.runs||[]).forEach((r,ri)=>{
+   const d=dev(r.device);
+   const entry=useRuntime?liveSession.latestEntries?.[ri]:null;
+   const st=entry?.start??starts?.[r.device]??initialPosition(d);
+   const pos=useRuntime?(runtimeP?.[r.device]??st):runPositionAt(r,st,t);
+   const state=useRuntime?runtimeEntryState(entry,virtualNow):runLiveState(r,st,t);
+   const posEl=box.querySelector(`[data-live-pos="${ri}"]`);
+   const clearEl=box.querySelector(`[data-live-clear="${ri}"]`);
+   const stateEl=box.querySelector(`[data-live-state="${ri}"]`);
+   if(posEl){posEl.textContent=`${Math.round(pos)} mm`;posEl.classList.toggle('second',state.second)}
+   if(clearEl){const clearance=hangingBottomMM(d,pos);clearEl.textContent=clearance==null?'—':`${Math.round(clearance)} mm`}
+   if(stateEl){stateEl.textContent=state.label;stateEl.className=`mon-state ${state.cls}`}
+ });
+}
+
+function positionsAt(index,t){
+ const starts=positionBeforeCue(index),p={...starts},cue=cues[index],counts=cueDeviceCounts(index);
+ for(const r of cue.runs||[]){
+   if((counts.get(String(r.device??''))||0)>1)continue;
+   p[r.device]=runPositionAt(r,starts[r.device],t);
+ }
+ return p;
+}
+
+// Runtime engine used only by the section monitor. Normal Cue editing still uses
+// the planned "previous Cue completed" positions above. While a Cue is RUNNING,
+// another GO fires the next playable Cue into this runtime state.
+function liveVirtualNow(realNow=performance.now()){
+ if(!liveSession)return realNow;
+ const anchor=liveSession.pauseStartedReal==null?realNow:liveSession.pauseStartedReal;
+ return anchor-liveSession.pausedTotal;
+}
+function runtimeMotionPosition(m,virtualNow){
+ if(!m)return null;
+ if(virtualNow<m.takeoverStamp){
+   return m.previous?runtimeMotionPosition(m.previous,virtualNow):m.prePosition;
+ }
+ if(m.hold)return m.start;
+ return runPositionAt(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
+}
+function runtimeMotionHasWork(m,virtualNow){
+ if(!m)return false;
+ if(virtualNow<m.takeoverStamp)return true; // delay / scheduled takeover still pending
+ if(m.hold)return false;
+ return virtualNow<m.endStamp-0.01;
+}
+function runtimePositions(virtualNow=liveVirtualNow()){
+ if(!liveSession)return null;
+ const p={...liveSession.basePositions};
+ liveSession.motions.forEach((m,id)=>{p[id]=runtimeMotionPosition(m,virtualNow)});
+ return p;
+}
+function runtimeDeviceActive(id,virtualNow=liveVirtualNow()){
+ if(!liveSession)return false;
+ return runtimeMotionHasWork(liveSession.motions.get(id),virtualNow);
+}
+function runtimeSessionHasWork(virtualNow=liveVirtualNow()){
+ if(!liveSession)return false;
+ for(const m of liveSession.motions.values())if(runtimeMotionHasWork(m,virtualNow))return true;
+ return false;
+}
+function buildRuntimeMotion(r,prePosition,cueGoStamp,previousMotion=null){
+ const sourceRun=deep(r);
+ syncRunTargetFromLabel(sourceRun);
+ const delay=Number(sourceRun.delay??0);
+ if(!Number.isFinite(delay)||delay<0)return {ok:false,msg:'ディレイは0秒以上にしてください'};
+ const takeoverStamp=cueGoStamp+delay*1000;
+ const start=previousMotion?runtimeMotionPosition(previousMotion,takeoverStamp):prePosition;
+ if(!Number.isFinite(start))return {ok:false,msg:'現在地を確認してください'};
+ const target=+sourceRun.target;
+ if(!Number.isFinite(target))return {ok:false,msg:'目的地を確認してください'};
+ const effectiveRun={...sourceRun,delay:0};
+ // In a consecutive GO the actual takeover position can already equal the target.
+ // Treat that as a completed command instead of rejecting the whole Cue.
+ if(Math.abs(target-start)<=1e-9){
+   const motion={sourceRun,run:effectiveRun,prePosition,start,takeoverStamp,endStamp:takeoverStamp,previous:previousMotion,hold:true};
+   return {ok:true,motion,start,total:delay};
+ }
+ const v=validateRun(effectiveRun,start);
+ if(!v.ok)return {ok:false,msg:v.msg};
+ const endStamp=takeoverStamp+v.total*1000;
+ const motion={sourceRun,run:effectiveRun,prePosition,start,takeoverStamp,endStamp,previous:previousMotion,hold:false};
+ return {ok:true,motion,start,total:delay+v.total};
+}
+function prepareRuntimeCue(index,cueGoStamp,session=null){
+ const q=cues[index];
+ if(!q||isMemoEntry(q))return {ok:false,errors:[{device:'Cue',msg:'再生できるCueではありません'}]};
+ const counts=cueDeviceCounts(index),errors=[],entries=[];
+ const basePositions=session?runtimePositions(cueGoStamp):positionBeforeCue(index);
+ (q.runs||[]).forEach((r,ri)=>{
+   const id=String(r.device??'');
+   if((counts.get(id)||0)>1){errors.push({index:ri,device:id,msg:'同一Cue内で同じ機器が重複しています'});return}
+   const d=dev(id);if(!d){errors.push({index:ri,device:id||'?',msg:'機器を確認してください'});return}
+   const pre=basePositions[id]??initialPosition(d);
+   const previous=session?.motions.get(id)||null;
+   const built=buildRuntimeMotion(r,pre,cueGoStamp,previous);
+   if(!built.ok){errors.push({index:ri,device:id,msg:built.msg});return}
+   entries[ri]={...built,device:id,sourceRun:built.motion.sourceRun};
+ });
+ const latestDuration=Math.max(0.1,...entries.filter(Boolean).map(x=>x.total||0));
+ return {ok:!errors.length,errors,entries,basePositions,latestDuration};
+}
+function commitRuntimeCue(index,cueGoStamp,prep,session=null){
+ const s=session||{
+   basePositions:{...prep.basePositions},motions:new Map(),pausedTotal:0,pauseStartedReal:null,
+   latestCueIndex:index,latestCueGoStamp:cueGoStamp,latestEntries:[],latestDuration:0.1
+ };
+ prep.entries.forEach(e=>{if(e)s.motions.set(e.device,e.motion)});
+ s.latestCueIndex=index;
+ s.latestCueGoStamp=cueGoStamp;
+ s.latestEntries=prep.entries;
+ s.latestDuration=prep.latestDuration;
+ return s;
+}
+function runtimeEntryState(entry,virtualNow){
+ if(!entry)return {label:'—',cls:'wait',second:false};
+ const m=entry.motion;
+ if(virtualNow<m.takeoverStamp){
+   const priorMoving=m.previous&&runtimeMotionHasWork(m.previous,virtualNow);
+   return {label:priorMoving?'前Q継続 / ディレイ':'ディレイ',cls:priorMoving?'run':'wait',second:false};
+ }
+ if(m.hold)return {label:'完了',cls:'done',second:false};
+ return runLiveState(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
+}
+function showMonitorRuntimeErrors(errors){
+ monitorValidation.textContent=errors?.length?'⚠ '+errors.map(e=>`${e.device}: ${e.msg}`).join(' / '):'';
+}
+function syncMonitorHeaderForCue(index,duration,value=0){
+ const q=cues[index];if(!q)return;
+ nowQNum.textContent=formatCueNumber(q.number)||'000.00';nowQName.textContent=q.name;
+ seek.max=Math.max(0.1,duration||0.1).toFixed(2);seek.value=Math.max(0,value||0);
+ monitorClock.textContent=(+seek.value||0).toFixed(1)+' s';
+}
+function stageLayout(width){
+ // 実図面ベースの前後寸法（右＝舞台前、左＝舞台奥）
+ // 通常バトン間 300mm
+ // 割UD－暗転幕 350mm
+ // LB奥行850mm、LB箱端－前後バトン各350mm → バトン中心－LB中心 775mm
+ // UHL－B24 600mm
+ const gapMM=(a,b)=>{
+   if(a==='割UD' && b==='暗転幕') return 350;
+   if(/^LB\d+$/.test(a) || /^LB\d+$/.test(b)) return 775;
+   if(a==='UHL' && b==='B24') return 600;
+   return 300;
+ };
+ const drawnDevices=sectionDevices();
+ const physical={};
+ let mm=0;
+ if(drawnDevices.length)physical[drawnDevices[0].id]=0;
+ for(let i=1;i<drawnDevices.length;i++){
+   mm+=gapMM(drawnDevices[i-1].id,drawnDevices[i].id);
+   physical[drawnDevices[i].id]=mm;
+ }
+ const total=Math.max(1,mm);
+ const usable=width*0.78;
+ const pxPerMM=usable/total;
+ const left=(width-usable)/2;
+ const xMap={};
+ drawnDevices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
+ return {xMap,pxPerMM,totalMM:total};
+}
+function sizeStageCanvas(){
+ const vp=document.getElementById('stageViewport'),c=document.getElementById('stageCanvas');
+ if(!vp||!c)return;
+ if(stageScaleMode==='equal'){
+   const targetW=Math.max(vp.clientWidth,Math.max(1180,sectionDevices().length*40+160));
+   const xScale=stageLayout(targetW).pxPerMM;
+   const targetH=Math.max(vp.clientHeight,Math.ceil(48+18+21550*xScale));
+   c.style.width=targetW+'px';
+   c.style.height=targetH+'px';
+ }else{
+   c.style.width='100%';
+   c.style.height='100%';
+ }
+}
+function mmToY(mm,h){const top=48,bottom=18,max=21550;return top+(max-mm)/max*(h-top-bottom)}
+function renderStage(t=0){
+ const c=document.getElementById('stageCanvas');
+ sizeStageCanvas();
+ const w=c.clientWidth,h=c.clientHeight;
+ if(!w||!h)return;
+ const runtimeNow=liveSession?liveVirtualNow():null;
+ const p=liveSession?runtimePositions(runtimeNow):positionsAt(selectedCue,t);livePositions=p;c.innerHTML='';
+ const stageStartState=positionStateBeforeCue(selectedCue);
+ const activeCue=cues[selectedCue];
+ const preferredLabelForDevice=id=>{
+   const run=(activeCue?.runs||[]).find(r=>r.device===id);
+   if(run && t>=(+run.delay||0)){
+     const d=dev(id),end=+run.target,cur=p[id];
+     if(Math.abs(cur-end)<=1 && run.targetMode && run.targetMode!=='direct')return run.targetMode;
+     return null;
+   }
+   return stageStartState.labels[id]||null;
+ };
+ for(const r of [{label:'',v:21550,cls:''},{label:'',v:8820,cls:'fly'},{label:'',v:0,cls:''}]){
+  const y=mmToY(r.v,h),line=document.createElement('div');line.className='ref-line '+r.cls;line.style.top=y+'px';c.appendChild(line);
+  if(r.label){const lab=document.createElement('div');lab.className='ref-label';lab.style.top=y+'px';lab.textContent=r.label;c.appendChild(lab);}
+ }
+ const {xMap,pxPerMM}=stageLayout(w);
+
+ // プロセライン（8130mm）。黒・少し太めで、割UDの少し手前まで引く。
+ const procY=mmToY(8130,h);
+ const proc=document.createElement('div');
+ proc.className='ref-line prosc';
+ proc.style.top=procY+'px';
+ const curtainX=xMap['割UD']||w*0.9;
+ proc.style.left=Math.min(w*0.94,curtainX+22)+'px';
+ proc.style.right='3%';
+ c.appendChild(proc);
+ sectionDevices().forEach((d,i)=>{
+  const x=xMap[d.id];
+  const active=liveSession?runtimeDeviceActive(d.id,runtimeNow):(cues[selectedCue].runs||[]).some(r=>r.device===d.id);
+  const dl=document.createElement('div');dl.className='dev-label';dl.style.left=x+'px';dl.textContent=d.id;c.appendChild(dl);
+  const pos=p[d.id]??initialPosition(d),y=mmToY(pos,h);
+
+  // すのこ側からバトンまでの昇降ワイヤー
+  const wireTop=mmToY(21550,h);
+  const lift=document.createElement('div');
+  lift.className='lift-wire';
+  lift.style.left=x+'px';
+  lift.style.top=Math.min(wireTop,y)+'px';
+  lift.style.height=Math.max(1,Math.abs(y-wireTop))+'px';
+  c.appendChild(lift);
+
+  const dot=document.createElement('div');dot.className='baton-dot';dot.style.left=x+'px';dot.style.top=y+'px';c.appendChild(dot);
+
+  // LBは「バトン上に載る躯体」を描きつつ、そのバトンから下に通常の吊り物も吊れる
+  const isLB=/^LB\d+$/.test(d.id);
+  if(isLB){
+    const topMM=pos+3700,bottomMM=pos;
+    const y1=mmToY(topMM,h),y2=mmToY(bottomMM,h),bridge=document.createElement('div');
+    bridge.className='item lb';
+    bridge.style.setProperty('--item-color',d.displayColor||'#cfd4d8');
+    bridge.style.opacity='1';
+    if(active)bridge.classList.add('active');
+    bridge.style.left=x+'px';
+    bridge.style.top=Math.min(y1,y2)+'px';
+    bridge.style.height=Math.max(8,Math.abs(y2-y1))+'px';
+    bridge.style.width=(850*pxPerMM)+'px';
+    bridge.style.minWidth=(850*pxPerMM)+'px';
+    bridge.title=`${d.id} ライトブリッジ\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos,preferredLabelForDevice(d.id))}`;
+    c.appendChild(bridge);
+  }
+
+  let topMM,bottomMM;const hang=+d.hangOffset||0;
+  if(d.type==='curtain'){bottomMM=pos;topMM=pos+10000}
+  else{topMM=pos-hang;bottomMM=topMM-(+d.toolHeight||0)}
+
+  // バトンから道具上端までの桁吊り
+  if(d.type!=='curtain' && hang>0){
+    const itemTopY=mmToY(topMM,h);
+    const hw=document.createElement('div');
+    hw.className='hang-wire '+(active?'active':'');
+    hw.style.left=x+'px';
+    hw.style.top=Math.min(y,itemTopY)+'px';
+    hw.style.height=Math.max(1,Math.abs(itemTopY-y))+'px';
+    c.appendChild(hw);
+  }
+
+  if((+d.toolHeight||0)>0 || d.type==='curtain'){
+    const y1=mmToY(topMM,h),y2=mmToY(bottomMM,h),item=document.createElement('div');
+    item.className='item '+(d.type==='curtain'?'curtain':'hasname');
+    item.style.setProperty('--item-color',d.displayColor||'#777');
+    item.style.opacity=String(d.displayOpacity==null?1:d.displayOpacity);
+    if(active)item.classList.add('active');
+    item.style.left=x+'px';item.style.top=Math.min(y1,y2)+'px';item.style.height=Math.max(3,Math.abs(y2-y1))+'px';
+    const clearance=hangingBottomMM(d,pos);
+    item.title=`${d.id} ${d.itemName||'吊り物'}\n位置 ${Math.round(pos)} mm\nラベル ${currentLabelName(d,pos,preferredLabelForDevice(d.id))}\n床まで ${clearance==null?'—':Math.round(clearance)+' mm'}`;c.appendChild(item);
+  }
+ });
+ updateMonitorRunLive(t);
+ renderStatus();
+}
+function renderStatus(){}
+function updateMonitorValidation(){
+ const errors=cueValidation(selectedCue);
+ if(!errors.length){monitorValidation.textContent='';return true;}
+ monitorValidation.textContent='⚠ '+errors.map(e=>`${e.device}: ${e.msg}`).join(' / ');
+ return false;
+}
+function selectCue(i){
+ const playable=closestPlayableIndex(Math.max(0,Math.min(cues.length-1,i)));
+ if(playable<0)return;
+ running=false;cancelAnimationFrame(raf);liveSession=null;
+ selectedCue=playable;selectedListIndex=playable;
+ const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+ syncMonitorHeaderForCue(selectedCue,dur,0);
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();renderStage(0);updateMonitorValidation();
+}
+function selectListItem(i){
+ selectedListIndex=Math.max(0,Math.min(cues.length-1,i));
+ running=false;cancelAnimationFrame(raf);liveSession=null;
+ if(!isMemoEntry(cues[selectedListIndex]))selectedCue=selectedListIndex;
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ if(!isMemoEntry(cues[selectedListIndex])){
+   const q=cues[selectedCue],dur=cueDuration(q,selectedCue);
+   syncMonitorHeaderForCue(selectedCue,dur,0);
+   renderStage(0);updateMonitorValidation();
+ }
+}
+function animationLoop(ts){
+ if(!running||!liveSession)return;
+ const virtualNow=liveVirtualNow(ts);
+ const elapsed=Math.max(0,(virtualNow-liveSession.latestCueGoStamp)/1000);
+ const shown=Math.min(elapsed,liveSession.latestDuration);
+ seek.value=shown;monitorClock.textContent=shown.toFixed(1)+' s';renderStage(shown);
+ if(!runtimeSessionHasWork(virtualNow)){
+   running=false;
+   const next=nextPlayableIndex(selectedCue);
+   if(next>=0)setTimeout(()=>{if(!running&&liveSession)selectCue(next)},120);
+   return;
+ }
+ raf=requestAnimationFrame(animationLoop);
+}
+function startRuntimeCueFromCurrentSelection(){
+ if(!updateMonitorValidation())return false;
+ const offset=Math.max(0,+seek.value||0),realNow=performance.now(),cueGoStamp=realNow-offset*1000;
+ const prep=prepareRuntimeCue(selectedCue,cueGoStamp,null);
+ if(!prep.ok){showMonitorRuntimeErrors(prep.errors);return false}
+ liveSession=commitRuntimeCue(selectedCue,cueGoStamp,prep,null);
+ syncMonitorHeaderForCue(selectedCue,prep.latestDuration,offset);
+ showMonitorRuntimeErrors([]);running=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(animationLoop);return true;
+}
+function fireNextCueIntoRuntime(){
+ const next=nextPlayableIndex(selectedCue);if(next<0)return false;
+ const virtualNow=liveVirtualNow();
+ const prep=prepareRuntimeCue(next,virtualNow,liveSession);
+ if(!prep.ok){showMonitorRuntimeErrors(prep.errors);return false}
+ liveSession=commitRuntimeCue(next,virtualNow,prep,liveSession);
+ selectedCue=next;selectedListIndex=next;
+ syncMonitorHeaderForCue(next,prep.latestDuration,0);
+ showMonitorRuntimeErrors([]);
+ renderCueList();renderCueEditor();renderMonitorCueBrowser();renderStage(0);
+ return true;
+}
+goBtn.onclick=()=>{
+ // GO during PAUSE resumes the current mixed runtime instead of advancing Cue.
+ if(liveSession&&!running&&liveSession.pauseStartedReal!=null){
+   const realNow=performance.now();liveSession.pausedTotal+=realNow-liveSession.pauseStartedReal;liveSession.pauseStartedReal=null;
+   running=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(animationLoop);return;
+ }
+ // Only a GO while already RUNNING fires the next Cue into the current motions.
+ if(running&&liveSession){fireNextCueIntoRuntime();return}
+ startRuntimeCueFromCurrentSelection();
+};
+pauseBtn.onclick=()=>{
+ if(!running)return;
+ running=false;cancelAnimationFrame(raf);
+ if(liveSession)liveSession.pauseStartedReal=performance.now();
+};
+stopBtn.onclick=()=>{running=false;cancelAnimationFrame(raf);liveSession=null;seek.value=0;monitorClock.textContent='0.0 s';renderStage(0);renderMonitorCueBrowser();updateMonitorValidation()};
+
+function setPositionDisplayMode(mode){
+ positionDisplayMode=mode==='mm'?'mm':'label';
+ const b=document.getElementById('posModeToggle');
+ if(b)b.textContent=positionDisplayMode==='label'?'ラベル':'mm';
+ renderMonitorCueBrowser();
+ renderCueEditor();
+}
+function togglePositionDisplayMode(){
+ setPositionDisplayMode(positionDisplayMode==='label'?'mm':'label');
+}
+posModeToggle.onclick=togglePositionDisplayMode;
+let monitorCueCollapsed=false;
+function setMonitorCueCollapsed(collapsed){
+ monitorCueCollapsed=!!collapsed;
+ const shell=document.querySelector('.main-monitor');
+ if(shell)shell.classList.toggle('cue-collapsed',monitorCueCollapsed);
+ if(window.toggleMonitorCuePanel){
+   toggleMonitorCuePanel.textContent=monitorCueCollapsed?'Cue一覧を開く ▼':'Cue一覧を畳む ▲';
+   toggleMonitorCuePanel.setAttribute('aria-expanded',String(!monitorCueCollapsed));
+ }
+ requestAnimationFrame(()=>renderStage(+seek.value||0));
+}
+toggleMonitorCuePanel.onclick=()=>setMonitorCueCollapsed(!monitorCueCollapsed);
+function applyStageScaleMode(center=false){
+ const b=document.getElementById('stageScaleToggle');
+ if(b){
+   const equal=stageScaleMode==='equal';
+   b.textContent=equal?'等縮尺':'全体';
+   b.classList.toggle('active',equal);
+   b.setAttribute('aria-pressed',equal?'true':'false');
+ }
+ renderStage(+seek.value||0);
+ const vp=document.getElementById('stageViewport');
+ if(!vp)return;
+ requestAnimationFrame(()=>{
+   if(stageScaleMode==='equal'&&center){
+     vp.scrollLeft=Math.max(0,(vp.scrollWidth-vp.clientWidth)/2);
+     vp.scrollTop=Math.max(0,(vp.scrollHeight-vp.clientHeight)/2);
+   }else if(stageScaleMode==='fit'){
+     vp.scrollLeft=0;vp.scrollTop=0;
+   }
+ });
+}
+stageScaleToggle.onclick=()=>{stageScaleMode=stageScaleMode==='fit'?'equal':'fit';applyStageScaleMode(true)};
+resetQ.onclick=()=>selectCue(selectedCue);prevQ.onclick=()=>{const i=prevPlayableIndex(selectedCue);if(i>=0)selectCue(i)};nextQ.onclick=()=>{const i=nextPlayableIndex(selectedCue);if(i>=0)selectCue(i)};
+seek.oninput=e=>{running=false;cancelAnimationFrame(raf);liveSession=null;const t=+e.target.value;monitorClock.textContent=t.toFixed(1)+' s';renderStage(t);renderMonitorCueBrowser()};
+
+
+function runSummary(r){
+ syncRunTargetFromLabel(r);const d=dev(r.device);
+ const target=positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode);
+ return `${r.device} ${d?.itemName||''} → ${target}${r.use2?` / 2位置 ${Math.round(+r.pos2||0)} @${Math.round(+r.speed2||0)}`:''}`;
+}
+function renderMonitorCueBrowser(){
+ const box=document.getElementById('monitorCueBrowser');if(!box)return;
+ const startState=positionStateBeforeCue(selectedCue),starts=startState.pos,startLabels=startState.labels;
+ box.innerHTML=cues.map((q,i)=>{
+   if(isMemoEntry(q)){
+     const memoText=escapeHtml(q.text||'メモ');
+     return `<div class="mon-q memo"><div class="mon-q-header" title="${memoText}">${memoText}</div></div>`;
+   }
+   const selected=i===selectedCue;
+   const summary=(q.runs||[]).map(runSummary).join(' ｜ ');
+   let detail='';
+   if(selected){
+     const hdr=['機器 / 吊物','開始','現在地','方向','目標','床まで','運転状態','速度','加速','減速','遅延','2位置','2速度','2加減'];
+     const useRuntime=!!(liveSession&&liveSession.latestCueIndex===selectedCue);
+     const virtualNow=useRuntime?liveVirtualNow():null;
+     const runtimeP=useRuntime?runtimePositions(virtualNow):null;
+     const cells=hdr.map(x=>`<div class="mh">${x}</div>`).join('')+(q.runs||[]).map((r,ri)=>{
+       const d=dev(r.device),entry=useRuntime?liveSession.latestEntries?.[ri]:null;
+       const st=entry?.start??starts[r.device]??initialPosition(d);
+       const t2=r.use2&&d?.type!=='constant'?transitionDisplayTime(+r.speed||0,+r.speed2||0):null;
+       const state=useRuntime?runtimeEntryState(entry,virtualNow):runLiveState(r,st,+seek.value||0);
+       const cur=useRuntime?(runtimeP?.[r.device]??st):runPositionAt(r,st,+seek.value||0);
+       const clearance=hangingBottomMM(d,cur);
+       const direction=(+r.target)>st?'▲':(+r.target)<st?'▼':'';
+       const directionClass=direction==='▲'?'direction-up':direction==='▼'?'direction-down':'';
+       const preferredStart=useRuntime?null:startLabels[r.device];
+       return `<div>${escapeHtml(r.device)}｜${escapeHtml(d?.itemName||'（吊物なし）')}</div><div>${escapeHtml(positionDisplayText(d,st,preferredStart))}</div><div class="mon-current ${state.second?'second':''}" data-live-pos="${ri}">${Math.round(cur)} mm</div><div class="mon-direction ${directionClass}" title="運転方向">${direction}</div><div>${escapeHtml(positionDisplayText(d,+r.target,r.targetMode==='direct'?null:r.targetMode))}</div><div class="mon-clearance" data-live-clear="${ri}">${clearance==null?'—':Math.round(clearance)+' mm'}</div><div class="mon-state ${state.cls}" data-live-state="${ri}">${escapeHtml(state.label)}</div><div>${d?.type==='constant'?fixedDeviceSpeed(d):Math.round(+r.speed||0)}</div><div>${d?.type==='constant'?FIXED_ACC:(+r.acc||0)}</div><div>${d?.type==='constant'?FIXED_DEC:(+r.dec||0)}</div><div>${+r.delay||0}</div><div>${r.use2?Math.round(+r.pos2||0):'—'}</div><div>${r.use2?Math.round(+r.speed2||0):'—'}</div><div>${t2===null?'—':t2.toFixed(1)}</div>`;
+     }).join('');
+     detail=`<div class="mon-run-grid">${cells}</div>`;
+   }
+   return `<div class="mon-q ${selected?'selected':''}" data-moncue="${i}"><div class="mon-q-header"><span class="mon-q-num">${formatCueNumber(q.number)||'000.00'}</span><span class="mon-q-name">${escapeHtml(q.name||'')}</span><span class="mon-q-summary">${escapeHtml(summary)}</span></div>${detail}</div>`;
+ }).join('');
+ box.querySelectorAll('[data-moncue]').forEach(el=>el.onclick=()=>selectCue(+el.dataset.moncue));
+ const sel=box.querySelector('.mon-q.selected');if(sel)sel.scrollIntoView({block:'nearest'});
+}
+function renderCueList(){
+ cueList.innerHTML='';
+ cues.forEach((q,i)=>{
+   const d=document.createElement('div');
+   d.className='cue-list-item '+(i===selectedListIndex?'selected ':'')+(isMemoEntry(q)?'memo ':(q.marker?'marker ':''));
+   d.textContent=isMemoEntry(q)?(q.text||'メモ'):(formatCueNumber(q.number)||'000.00')+' '+q.name;
+   d.draggable=true;d.dataset.i=i;d.onclick=()=>selectListItem(i);
+   d.ondragstart=e=>e.dataTransfer.setData('text/plain',String(i));
+   d.ondragover=e=>e.preventDefault();
+   d.ondrop=e=>{
+     e.preventDefault();
+     const from=+e.dataTransfer.getData('text/plain'),to=i;
+     if(!Number.isInteger(from)||from===to)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],selectedObj=cues[selectedListIndex];
+     const [m]=cues.splice(from,1);cues.splice(to,0,m);
+     selectedCue=Math.max(0,cues.indexOf(activeObj));
+     selectedListIndex=Math.max(0,cues.indexOf(selectedObj));
+     save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   cueList.appendChild(d);
+ });
+}
+function labelIndexForRun(d,r){
+ if(!d || !Array.isArray(d.labels))return -1;
+ const mode=r.targetMode;
+ if(!mode || mode==='direct')return -1;
+ const candidates=[];
+ d.labels.forEach((l,i)=>{if(l.name===mode)candidates.push(i)});
+ if(!candidates.length)return -1;
+ if(candidates.length===1)return candidates[0];
+ const target=+r.target;
+ return candidates.reduce((best,i)=>Math.abs(+d.labels[i].pos-target)<Math.abs(+d.labels[best].pos-target)?i:best,candidates[0]);
+}
+function syncRunTargetFromLabel(r){
+ const d=dev(r.device);if(!d)return;
+ if(r.targetMode && r.targetMode!=='direct'){
+   const i=labelIndexForRun(d,r);
+   if(i>=0)r.target=+d.labels[i].pos; else r.targetMode='direct';
+ }
+}
+function inferRunTargetMode(r){
+ const d=dev(r.device);if(!d)return 'direct';
+ if(r.targetMode){
+   if(r.targetMode==='direct')return 'direct';
+   if(labelIndexForRun(d,r)>=0)return r.targetMode;
+   r.targetMode='direct';
+   return r.targetMode;
+ }
+ const matches=d.labels.filter(x=>Math.abs(+x.pos-(+r.target))<0.001);
+ r.targetMode=matches.length===1?matches[0].name:'direct';
+ return r.targetMode;
+}
+function targetOptions(d,r){
+ const mode=inferRunTargetMode(r),selectedIndex=mode==='direct'?-1:labelIndexForRun(d,r);
+ return d.labels.map((l,i)=>`<option value="label:${i}" ${i===selectedIndex?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('')+`<option value="direct" ${mode==='direct'?'selected':''}>直入力</option>`;
+}
+function renderCueEditor(){
+ const q=cues[selectedListIndex];
+ if(!q){cueEditor.innerHTML='';return;}
+ if(isMemoEntry(q)){
+   cueEditor.innerHTML=`<div class="memo-editor">
+     <h2>メモ</h2>
+     <textarea id="editMemoText" placeholder="例：機構チェック / 本番">${escapeHtml(q.text||'')}</textarea>
+     <div class="memo-actions">
+       <button id="moveMemoUp">上へ</button>
+       <button id="moveMemoDown">下へ</button>
+       <button id="deleteMemo" class="danger">メモ削除</button>
+     </div>
+     <div class="small-muted" style="margin-top:10px">メモはキューリストに表示されますが、GO・前Q・次Q・自動送りでは飛ばされます。</div>
+   </div>`;
+   const [editMemoText,moveMemoUp,moveMemoDown,deleteMemo]=["editMemoText", "moveMemoUp", "moveMemoDown", "deleteMemo"].map(id=>document.getElementById(id));
+   editMemoText.oninput=e=>{pushUndoSnapshotForInput(`memo:${selectedListIndex}`);q.text=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+   moveMemoUp.onclick=()=>{
+     if(selectedListIndex<=0)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+     cues.splice(selectedListIndex-1,0,m);selectedListIndex--;
+     selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   moveMemoDown.onclick=()=>{
+     if(selectedListIndex>=cues.length-1)return;
+     pushUndoSnapshot();
+     const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+     cues.splice(selectedListIndex+1,0,m);selectedListIndex++;
+     selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   deleteMemo.onclick=()=>{
+     pushUndoSnapshot();
+     cues.splice(selectedListIndex,1);
+     selectedListIndex=Math.max(0,Math.min(selectedListIndex,cues.length-1));
+     selectedCue=closestPlayableIndex(selectedCue);
+     save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+   };
+   return;
+ }
+ const startState=positionStateBeforeCue(selectedListIndex),starts=startState.pos,startLabels=startState.labels,counts=cueDeviceCounts(selectedListIndex);
+ const rows=(q.runs||[]).map((r,ri)=>{
+   const d=dev(r.device)||devices[0],fixed=d.type==='constant';
+   const st=starts[r.device]??initialPosition(d);
+   const dist=Math.abs((+r.target)-st);
+   const direction=(+r.target)>st?'▲':(+r.target)<st?'▼':'';
+   const validation=(counts.get(String(r.device??''))||0)>1
+     ? {ok:false,msg:'同一Cue内で同じ機器が重複しています'}
+     : validateRun(r,st);
+   const time=validation.ok?validation.total:NaN;
+   const trans2=r.use2&&!fixed?transitionDisplayTime(+r.speed||0,+r.speed2||0):0;
+   const duplicate=(counts.get(String(r.device??''))||0)>1;
+   return `<tr class="${validation.ok?'':'invalid'}">
+    <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
+    <td><select data-ri="${ri}" data-f="device">${selectableDevices().map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
+    <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d),startLabels[r.device]))}</td>
+    <td class="run-direction ${direction==='▲'?'direction-up':direction==='▼'?'direction-down':''}" title="運転方向">${direction}</td>
+    <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
+    <td><input class="target" data-ri="${ri}" data-f="target" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.target}" ${inferRunTargetMode(r)==='direct'?'':'disabled'}></td>
+    <td class="readonly">${Math.round(dist)}</td>
+    <td><input data-ri="${ri}" data-f="speed" type="number" min="1" max="1500" value="${fixed?fixedDeviceSpeed(d):r.speed}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="time" type="number" min="0.1" step=".1" value="${Number.isFinite(time)?time.toFixed(1):''}" ${fixed||duplicate?'disabled':''} title="${fixed?fixedDeviceSpeed(d)+' mm/s 固定':(duplicate?'同一Cueの機器重複を解消してください':'運転タイムを入力すると速度を逆算します（遅延は別計算）')}"></td>
+    <td><input data-ri="${ri}" data-f="acc" type="number" min="0" step=".1" value="${fixed?FIXED_ACC:r.acc}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="dec" type="number" min="0" step=".1" value="${fixed?FIXED_DEC:r.dec}" ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="delay" type="number" min="0" step=".1" value="${r.delay||0}"></td>
+    <td><input data-ri="${ri}" data-f="use2" type="checkbox" ${r.use2?'checked':''} ${fixed?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="pos2" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${r.pos2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input data-ri="${ri}" data-f="speed2" type="number" min="1" max="1500" value="${r.speed2??''}" ${(!r.use2||fixed)?'disabled':''}></td>
+    <td><input class="readonly-derived" type="number" step=".1" value="${r.use2&&!fixed?trans2.toFixed(1):'0.0'}" readonly></td>
+   </tr>`;
+ }).join('');
+ cueEditor.innerHTML=`<div class="q-block"><div class="q-header"><input class="q-number" id="editQNum" inputmode="decimal" placeholder="000.00" value="${formatCueNumber(q.number)||'000.00'}"><input class="q-name" id="editQName" value="${escapeHtml(q.name||'')}"><div class="q-actions"><button id="previewQ">断面で確認</button></div></div>
+ <div class="editor-toolbar"><button id="moveCueUp">Qを上へ</button><button id="moveCueDown">Qを下へ</button><button id="copyCue">Qコピー</button><button id="duplicateQ">Q複製</button><button id="deleteCue" class="danger">Q削除</button><button id="copyRows" class="mutedbtn">選択装置をコピー</button><button id="pasteRows" class="mutedbtn">装置を貼り付け</button><button id="deleteRows" class="danger" disabled>選択装置を削除</button><div class="position-mode"><span class="mode-label">表示</span><button id="editPosModeToggle">${positionDisplayMode==='label'?'ラベル':'mm'}</button></div></div>
+ <div id="cueValidationPanel" class="cue-validation ${cueValidation(selectedListIndex).length?'show':''}">${cueValidation(selectedListIndex).map(e=>`<div>⚠ ${escapeHtml(e.device)}: ${escapeHtml(e.msg)}</div>`).join('')}</div>
+ <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${escapeHtml(q.number)}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
+ <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:40px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
+ <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>現在地</th><th>方向</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
+ const [editQNum,editQName,previewQ,moveCueUp,moveCueDown,copyCue,duplicateQ,deleteCue,copyRows,pasteRows,deleteRows,editPosModeToggle,renumberBox,rnStartIndex,rnEndIndex,rnStartNumber,rnStep,runRenumber,addRun]=["editQNum", "editQName", "previewQ", "moveCueUp", "moveCueDown", "copyCue", "duplicateQ", "deleteCue", "copyRows", "pasteRows", "deleteRows", "editPosModeToggle", "renumberBox", "rnStartIndex", "rnEndIndex", "rnStartNumber", "rnStep", "runRenumber", "addRun"].map(id=>document.getElementById(id));
+ editQNum.oninput=e=>{pushUndoSnapshotForInput(`qnum:${selectedListIndex}`);q.number=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+ editQNum.onblur=e=>{
+   const formatted=formatCueNumber(e.target.value);
+   if(!formatted){e.target.value=q.number||'000.00';return;}
+   q.number=formatted;e.target.value=formatted;scheduleSave();renderCueList();renderMonitorCueBrowser();
+ };
+ editQName.oninput=e=>{pushUndoSnapshotForInput(`qname:${selectedListIndex}`);q.name=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
+ previewQ.onclick=()=>{document.querySelector('[data-tab="monitor"]').click();selectCue(selectedListIndex)};
+ moveCueUp.onclick=()=>{
+   if(selectedListIndex<=0)return;
+   pushUndoSnapshot();
+   const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+   cues.splice(selectedListIndex-1,0,m);selectedListIndex--;
+   selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ };
+ moveCueDown.onclick=()=>{
+   if(selectedListIndex>=cues.length-1)return;
+   pushUndoSnapshot();
+   const activeObj=cues[selectedCue],[m]=cues.splice(selectedListIndex,1);
+   cues.splice(selectedListIndex+1,0,m);selectedListIndex++;
+   selectedCue=cues.indexOf(activeObj);save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+ };
+ copyCue.onclick=()=>{cueClipboard=deep(q)};
+ duplicateQ.onclick=()=>{
+   pushUndoSnapshot();
+   const c=deep(q);c.number=nextQNumber(q.number);c.name+=' コピー';
+   cues.splice(selectedListIndex+1,0,c);save();selectCue(selectedListIndex+1);
+ };
+ deleteCue.onclick=()=>{
+   if(playableCueCount()<=1)return;
+   pushUndoSnapshot();
+   const wasActive=cues[selectedListIndex]===cues[selectedCue];
+   cues.splice(selectedListIndex,1);
+   selectedListIndex=Math.min(selectedListIndex,cues.length-1);
+   if(wasActive)selectedCue=closestPlayableIndex(selectedListIndex);
+   else selectedCue=cues.indexOf(cues[selectedCue])>=0?selectedCue:closestPlayableIndex(selectedListIndex);
+   save();
+   if(selectedCue>=0)selectCue(selectedCue);else{renderCueList();renderCueEditor();renderMonitorCueBrowser();}
+ };
+ const selectedRunIndexes=()=>[...cueEditor.querySelectorAll('[data-rowcheck]:checked')].map(x=>+x.dataset.rowcheck).filter(Number.isInteger);
+ const updateRunSelectionActions=()=>{const del=document.getElementById('deleteRows');if(del)del.disabled=selectedRunIndexes().length===0};
+ copyRows.onclick=()=>{const idx=selectedRunIndexes();runClipboard=idx.map(i=>deep(q.runs[i]))};
+ pasteRows.onclick=()=>{if(!runClipboard.length)return;pushUndoSnapshot();q.runs.push(...deep(runClipboard));save();renderCueEditor()};
+ deleteRows.onclick=()=>{const idx=selectedRunIndexes();if(!idx.length)return;pushUndoSnapshot();idx.sort((a,b)=>b-a).forEach(i=>q.runs.splice(i,1));save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation()};
+ cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.onchange=()=>{const all=document.getElementById('selectAllRuns');const checks=[...cueEditor.querySelectorAll('[data-rowcheck]')];if(all)all.checked=checks.length>0&&checks.every(x=>x.checked);updateRunSelectionActions()});
+ const selectAll=document.getElementById('selectAllRuns');if(selectAll)selectAll.onchange=()=>{cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.checked=selectAll.checked);updateRunSelectionActions()};
+ updateRunSelectionActions();
+ addRun.onclick=()=>{pushUndoSnapshot();const d=selectableDevices().find(x=>x.id==='B1')||selectableDevices()[0];if(!d)return;q.runs.push({device:d.id,targetMode:d.labels[0]?.name||'direct',target:d.labels[0]?.pos??d.machineMax,speed:1000,acc:2,dec:2,delay:0,use2:false,pos2:'',speed2:''});save();renderCueEditor()};
+ editPosModeToggle.onclick=togglePositionDisplayMode;
+ cueEditor.querySelectorAll('[data-ri][data-f]').forEach(el=>el.onchange=()=>{
+   const ri=+el.dataset.ri,f=el.dataset.f,r=q.runs[ri];
+   if(f==='time'){
+     const d=dev(r.device);
+     const startsNow=positionBeforeCue(selectedListIndex);
+     const st=startsNow[r.device]??initialPosition(d);
+     const solved=solvePrimarySpeedFromTime(r,st,+el.value);
+     if(!solved.ok){alert(solved.msg);renderCueEditor();return;}
+     pushUndoSnapshot();
+     r.speed=solved.speed;
+     save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
+     if(!solved.exact)alert(`指定した ${(+el.value).toFixed(1)} 秒は実機速度では一致しません。\n最も近い ${solved.shown.toFixed(1)} 秒（${solved.speed} mm/s）に設定しました。`);
+     return;
+   }
+   pushUndoSnapshot();
+   if(f==='device'){const d=dev(el.value);r.device=d.id;if(d.labels[0]){r.targetMode=d.labels[0].name;r.target=+d.labels[0].pos}else{r.targetMode='direct';r.target=+d.machineMax}r.speed=d.type==='constant'?fixedDeviceSpeed(d):(r.speed||1000);r.acc=d.type==='constant'?FIXED_ACC:(r.acc||2);r.dec=d.type==='constant'?FIXED_DEC:(r.dec||2);if(d.type==='constant'){r.use2=false;r.pos2='';r.speed2=''}}else if(f==='targetSelect'){const d=dev(r.device);if(el.value==='direct'){r.targetMode='direct'}else if(el.value.startsWith('label:')){const li=+el.value.slice(6),l=d?.labels?.[li];if(l){r.targetMode=l.name;r.target=+l.pos}else r.targetMode='direct'}}else if(f==='use2'){r.use2=el.checked}else r[f]=['target','speed','acc','dec','delay','pos2','speed2'].includes(f)?+el.value:el.value;
+   save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
+ });
+ renumberOpenBtn.onclick=()=>{renumberBox.style.display=renumberBox.style.display==='none'?'grid':'none'};
+ runRenumber.onclick=()=>{pushUndoSnapshot();let a=Math.max(1,+rnStartIndex.value||1)-1,b=Math.min(cues.length,+rnEndIndex.value||cues.length)-1;if(b<a)[a,b]=[b,a];const s=parseFloat(rnStartNumber.value)||0,step=parseFloat(rnStep.value)||1;let n=0;for(let i=a;i<=b;i++){if(isMemoEntry(cues[i]))continue;cues[i].number=(s+n*step).toFixed(2).padStart(6,'0');n++;}save();renderCueList();renderCueEditor();renderMonitorCueBrowser()};
+}
+function formatCueNumber(value){
+ const s=String(value??'').trim();
+ if(s==='')return null;
+ const n=Number(s);
+ if(!Number.isFinite(n) || n<0)return null;
+ return n.toFixed(2).padStart(6,'0');
+}
+function nextQNumber(s){const n=Math.round((parseFloat(s)||0)*100)+10;return formatCueNumber(n/100)||'000.10'}
+function nextWholeCueNumber(s){return formatCueNumber((parseFloat(s)||0)+1)||'001.00'}
+newCueBtn.onclick=()=>{pushUndoSnapshot();const last=lastPlayableNumber();cues.push({number:nextWholeCueNumber(last),name:'新規キュー',runs:[]});save();selectCue(cues.length-1)};
+newMemoBtn.onclick=()=>{
+ pushUndoSnapshot();
+ const at=Math.max(0,Math.min(cues.length,selectedListIndex+1));
+ cues.splice(at,0,{kind:'memo',text:'新規メモ'});
+ selectedListIndex=at;save();renderCueList();renderCueEditor();renderMonitorCueBrowser();
+};
+pasteCueBtn.onclick=()=>{if(!cueClipboard)return;pushUndoSnapshot();const c=deep(cueClipboard);c.number=nextQNumber(previousPlayableNumber(selectedListIndex));c.name+=' 貼付';const at=selectedListIndex+1;cues.splice(at,0,c);save();selectCue(at)};
+renumberOpenBtn.onclick=()=>{document.querySelector('[data-tab="cue"]').click();setTimeout(()=>{const b=document.getElementById('renumberBox');if(b)b.style.display='grid'},0)};
+
+function initialLabelOptions(d,current){
+ const preferred=inferredInitialLabelName(d);
+ let selectedIndex=-1;
+ if(preferred){selectedIndex=d.labels.findIndex(l=>l.name===preferred && Math.abs(+l.pos-(+current))<=1)}
+ let html=d.labels.map((l,i)=>`<option value="label:${i}" ${i===selectedIndex?'selected':''}>${escapeHtml(l.name)}　${Math.round(l.pos)}mm</option>`).join('');
+ html+=`<option value="direct" ${selectedIndex<0?'selected':''}>直接入力</option>`;
+ return html;
+}
+function renderInitialBulk(){
+ const body=document.getElementById('initialBulkBody');if(!body)return;
+ body.innerHTML='';
+ devices.forEach((d,i)=>{
+  if(!isDeviceEnabled(d))return;
+  const p=initialPosition(d);
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="devcol">${escapeHtml(d.id)}</td><td class="itemcol">${escapeHtml(d.itemName||'—')}</td>
+    <td class="labelcol"><select data-bulk-i="${i}" data-bulk-k="label">${initialLabelOptions(d,p)}</select></td>
+    <td class="mmcol"><input data-bulk-i="${i}" data-bulk-k="pos" type="number" min="${d.machineMin}" max="${d.machineMax}" value="${Math.round(p)}"></td>
+    <td class="rangecol">${Math.round(d.machineMin)} ～ ${Math.round(d.machineMax)} mm</td>`;
+  body.appendChild(tr);
+ });
+ body.querySelectorAll('select[data-bulk-k="label"]').forEach(sel=>sel.onchange=()=>{
+   const i=+sel.dataset.bulkI,d=devices[i];if(!d)return;
+   pushUndoSnapshot();
+   if(sel.value==='direct'){d.initialLabelName=null;scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);return;}
+   if(sel.value.startsWith('label:')){
+     const li=+sel.value.slice(6),l=d.labels?.[li];if(!l)return;
+     d.initialLabelName=l.name;
+     const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+     input.value=Math.round(+l.pos);
+     d.initialPosition=+l.pos;
+     scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
+   }
+ });
+ body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>input.addEventListener('input',()=>{
+   pushUndoSnapshotForInput(`initial:${input.dataset.bulkI}`);
+   const d=devices[+input.dataset.bulkI];if(d)d.initialLabelName=null;
+   const sel=body.querySelector(`select[data-bulk-i="${input.dataset.bulkI}"][data-bulk-k="label"]`);if(sel)sel.value='direct';
+   syncInitialFromTable();
+ }));
+}
+function renderDeviceList(){
+ const standardList=document.getElementById('deviceList'),otherList=document.getElementById('otherPermanentList');
+ standardList.innerHTML='';otherList.innerHTML='';
+ devices.forEach(d=>{
+   const b=document.createElement('button');b.type='button';b.className='device-btn '+(d.id===selectedDevice?'active':'');
+   const name=document.createElement('span');name.textContent=d.id+(isOtherPermanent(d)?(d.enabled?' ［ON］':' ［OFF］'):'');
+   const item=document.createElement('small');item.textContent=d.itemName||'';
+   b.append(name,item);
+   b.addEventListener('click',()=>{selectedDevice=d.id;renderDeviceList();renderSettings()});
+   (isOtherPermanent(d)?otherList:standardList).appendChild(b);
+ });
+ if(isOtherPermanent(dev(selectedDevice)))document.getElementById('otherPermanentGroup').open=true;
+}
+function hangingPackage(d){
+ return {
+   itemName:d.itemName||'',
+   toolHeight:+d.toolHeight||0,
+   hangOffset:+d.hangOffset||0,
+   labels:deep(d.labels||[]),
+   displayColor:d.displayColor||'#6f767a',
+   displayOpacity:d.displayOpacity==null?1:+d.displayOpacity
+ };
+}
+function applyHangingPackage(d,p){
+ d.itemName=p.itemName||'';
+ d.toolHeight=+p.toolHeight||0;
+ d.hangOffset=+p.hangOffset||0;
+ d.labels=deep(p.labels||[]);
+ d.displayColor=p.displayColor||'#6f767a';
+ d.displayOpacity=p.displayOpacity==null?1:+p.displayOpacity;
+}
+function clearHangingPackage(d){
+ d.itemName='';
+ d.toolHeight=0;
+ d.hangOffset=0;
+ d.labels=[];
+ d.displayColor='#6f767a';
+ d.displayOpacity=1;
+}
+function refreshHangingClipboardUI(){
+ if(!window.pasteHangingBtn)return;
+ pasteHangingBtn.disabled=!hangingItemClipboard;
+ hangingClipState.textContent=hangingItemClipboard
+   ? `${hangingItemClipboard.sourceId} ${hangingItemClipboard.data.itemName||'（名称なし）'}`
+   : 'コピーなし';
+}
+function refreshAfterHangingEdit(){
+ save();
+ renderDeviceList();
+ renderSettings();
+ renderInitialBulk();
+ renderCueList();
+ renderCueEditor();
+ renderMonitorCueBrowser();
+ renderStage(+seek.value||0);
+}
+
+function renderSettings(){
+ const d=dev(selectedDevice);if(!d)return;
+ const usagePanel=document.getElementById('permanentUsagePanel'),usageInput=document.getElementById('permanentEnabledInput'),usageReason=document.getElementById('permanentUsageReason');
+ usagePanel.hidden=!isOtherPermanent(d);
+ usageInput.checked=d.enabled===true;
+ const restriction=isOtherPermanent(d)?permanentUsageRestriction(d.id):'';
+ usageInput.disabled=!!restriction;
+ usageReason.textContent=restriction||'OFFでも設定は保持されます。使用ONの装置だけCue選択と初期位置一覧に表示します。断面図には表示しません。';
+ setTitle.textContent=d.id+'　'+(d.itemName||'');
+ s_id.value=d.id;s_item.value=d.itemName||'';s_height.value=d.toolHeight||0;s_hang.value=d.hangOffset||0;
+ const palette=['#333333','#6f767a','#d9d9d9','#b51f2e','#d97b16','#d6bf28','#3d8b4f','#2e70b8','#7652a3'];
+ s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((d.displayOpacity==null?1:d.displayOpacity)*100);s_opacityValue.textContent=s_opacity.value;
+ if(d.type==='constant')specialNotice.innerHTML=`<div class="notice">${escapeHtml(d.id)}：${fixedDeviceSpeed(d)} mm/s 固定、加速0.1秒・減速0.1秒固定として扱います。可動範囲 ${d.machineMin}〜${d.machineMax} mm。</div>`;
+ else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
+ else specialNotice.innerHTML='';
+ labelBody.innerHTML='';
+ for(let i=0;i<10;i++){const l=d.labels[i]||{name:'',pos:''};const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-k="name" value="${escapeHtml(l.name)}"></td><td><input data-k="pos" type="number" value="${escapeHtml(l.pos)}"></td>`;labelBody.appendChild(tr)}
+ refreshHangingClipboardUI();
+}
+function syncSettingsFromUI(){
+ const d=dev(selectedDevice);if(!d)return;
+ d.itemName=s_item.value;
+ d.toolHeight=Math.max(0,+s_height.value||0);
+ d.hangOffset=Math.max(0,+s_hang.value||0);
+ s_height.value=d.toolHeight;s_hang.value=d.hangOffset;
+ d.displayColor=s_color.value;d.displayOpacity=(+s_opacity.value||100)/100;
+ const arr=[];document.querySelectorAll('#labelBody tr').forEach(tr=>{const n=tr.querySelector('[data-k="name"]').value.trim(),p=tr.querySelector('[data-k="pos"]').value;if(n&&p!=='')arr.push({name:n,pos:+p})});d.labels=arr;
+ scheduleSave();renderDeviceList();renderInitialBulk();renderMonitorCueBrowser();renderStage(+seek.value||0);
+}
+document.getElementById('permanentEnabledInput').addEventListener('change',e=>{
+ if(!setPermanentDeviceUsage(selectedDevice,e.target.checked))renderSettings();
+});
+copyHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ hangingItemClipboard={sourceId:d.id,data:hangingPackage(d)};
+ refreshHangingClipboardUI();
+};
+cutHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ pushUndoSnapshot();
+ hangingItemClipboard={sourceId:d.id,data:hangingPackage(d)};
+ clearHangingPackage(d);
+ refreshAfterHangingEdit();
+};
+pasteHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d||!hangingItemClipboard)return;
+ const hasData=(d.itemName||'').trim() || (+d.toolHeight||0)>0 || (d.labels||[]).length;
+ if(hasData && !confirm(`${d.id} の現在の吊り物設定を上書きしますか？`))return;
+ pushUndoSnapshot();
+ applyHangingPackage(d,hangingItemClipboard.data);
+ refreshAfterHangingEdit();
+};
+deleteHangingBtn.onclick=()=>{
+ const d=dev(selectedDevice);if(!d)return;
+ const hasData=(d.itemName||'').trim() || (+d.toolHeight||0)>0 || (d.labels||[]).length;
+ if(!hasData)return;
+ if(!confirm(`${d.id} の吊り物設定を削除しますか？\n機構そのものと初期位置は削除されません。`))return;
+ pushUndoSnapshot();
+ clearHangingPackage(d);
+ refreshAfterHangingEdit();
+};
+
+['s_item','s_height','s_hang','s_color','s_opacity'].forEach(id=>{
+ const el=document.getElementById(id);el.addEventListener('input',()=>{
+   pushUndoSnapshotForInput(`setting:${selectedDevice}:${id}`);
+   if(id==='s_opacity')s_opacityValue.textContent=s_opacity.value;
+   syncSettingsFromUI();
+ });
+});
+labelBody.addEventListener('input',e=>{
+ const tr=e.target.closest('tr');
+ const row=tr?[...labelBody.children].indexOf(tr):-1;
+ pushUndoSnapshotForInput(`label:${selectedDevice}:${row}:${e.target.dataset.k||''}`);
+ syncSettingsFromUI();
+});
+setAllTop.onclick=()=>{
+ pushUndoSnapshot();
+ const body=document.getElementById('initialBulkBody');
+ devices.forEach((d,i)=>{
+   if(!isDeviceEnabled(d))return;
+   const p=+d.machineMax;
+   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+   const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
+   if(input)input.value=Math.round(p);
+   d.initialLabelName=null;
+   if(sel)sel.value='direct';
+ });
+ syncInitialFromTable();
+};
+setEmptyUpper.onclick=()=>{
+ pushUndoSnapshot();
+ const body=document.getElementById('initialBulkBody');
+ devices.forEach((d,i)=>{
+   if(!/^B\d+$/.test(d.id))return;
+   if((d.itemName||'').trim())return;
+   const p=d.machineMax;
+   const input=body.querySelector(`input[data-bulk-i="${i}"]`);
+   const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
+   if(input)input.value=Math.round(+p);
+   d.initialLabelName=null;
+   if(sel)sel.value='direct';
+ });
+ syncInitialFromTable();
+};
+function syncInitialFromTable(){
+ const body=document.getElementById('initialBulkBody');
+ body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>{
+   const i=+input.dataset.bulkI,d=devices[i],v=+input.value;
+   if(!d || !Number.isFinite(v))return;
+   const lo=+d.machineMin,hi=+d.machineMax;
+   const clamped=(Number.isFinite(lo)&&Number.isFinite(hi))?Math.max(lo,Math.min(hi,v)):v;
+   d.initialPosition=clamped;
+   if(clamped!==v)input.value=Math.round(clamped);
+ });
+ scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
+}
+function formatShaku(n){
+ if(!Number.isFinite(n))return '';
+ return n.toFixed(4).replace(/0+$/,'').replace(/\.$/,'');
+}
+function shakuToMm(shaku){return Math.round((+shaku)*303)}
+function mmToShaku(mm){return (+mm)/303}
+let shakuUpdating=false;
+function calcFromShaku(){
+ if(shakuUpdating)return;
+ const s=parseFloat(shakuInput.value);
+ if(!Number.isFinite(s)||s<0){
+   shakuUpdating=true;mmInput.value='';shakuUpdating=false;
+   shakuResult.textContent='尺またはmmを入力すると自動換算します。';
+   return;
+ }
+ const raw=s*303,mm=Math.round(raw);
+ shakuUpdating=true;mmInput.value=mm;shakuUpdating=false;
+ shakuResult.innerHTML=`<strong>${formatShaku(s)}尺 = ${mm}mm</strong><br>${formatShaku(s)} × 303 = ${raw.toFixed(3).replace(/\.?0+$/,'')}mm → ${mm}mm`;
+}
+function calcFromMm(){
+ if(shakuUpdating)return;
+ const raw=parseFloat(mmInput.value);
+ if(!Number.isFinite(raw)||raw<0){
+   shakuUpdating=true;shakuInput.value='';shakuUpdating=false;
+   shakuResult.textContent='尺またはmmを入力すると自動換算します。';
+   return;
+ }
+ const mm=Math.round(raw),s=mmToShaku(mm);
+ shakuUpdating=true;mmInput.value=mm;shakuInput.value=formatShaku(s);shakuUpdating=false;
+ shakuResult.innerHTML=`<strong>${mm}mm = ${formatShaku(s)}尺</strong><br>${mm} ÷ 303 = ${formatShaku(s)}尺`;
+}
+shakuInput.addEventListener('input',calcFromShaku);
+mmInput.addEventListener('input',calcFromMm);
+
+function updateSimpleCalc(){
+ const a=parseFloat(calcA.value),b=parseFloat(calcB.value);
+ if(!Number.isFinite(a)||!Number.isFinite(b)){
+   calcResult.value='';
+   calcMessage.textContent='2つの数値を入力してください。';
+   return;
+ }
+ const result=calcOp.value==='-'?a-b:a+b;
+ calcResult.value=Number.isInteger(result)?String(result):String(+result.toFixed(6));
+ calcMessage.textContent=`${a} ${calcOp.value==='-'?'－':'＋'} ${b} ＝ ${calcResult.value}`;
+}
+calcA.addEventListener('input',updateSimpleCalc);
+calcB.addEventListener('input',updateSimpleCalc);
+calcOp.addEventListener('change',updateSimpleCalc);
+
+function syncTabletLandscapeClass(){
+ const coarse=window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints>0;
+ const landscape=window.innerWidth>window.innerHeight;
+ document.documentElement.classList.toggle('tablet-landscape',!!(coarse&&landscape));
+}
+syncTabletLandscapeClass();
+window.addEventListener('orientationchange',()=>setTimeout(()=>{syncTabletLandscapeClass();if(monitor.classList.contains('active'))renderStage(+seek.value||0)},80));
+window.addEventListener('pageshow',()=>setTimeout(syncTabletLandscapeClass,0));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',syncTabletLandscapeClass);
+
+document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
+ if(b.dataset.tab==='monitor')setTimeout(()=>{renderMonitorCueBrowser();renderStage(+seek.value||0)},0);
+ if(b.dataset.tab==='initial')renderInitialBulk();
+ if(b.dataset.tab==='settings'){renderDeviceList();renderSettings();}
+});
+window.addEventListener('resize',()=>{syncTabletLandscapeClass();if(monitor.classList.contains('active'))renderStage(+seek.value||0)});
+csvInitBtn.onclick=()=>csvInitFile.click();
+csvInitFile.onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+   const buf=await file.arrayBuffer();
+   const csvText=decodeCsvBuffer(buf);
+   importInitialSetupCsv(csvText);
+   clearEditHistory();
+ }catch(err){
+   console.error(err);
+   alert('CSVの読み込みに失敗しました。');
+ }
+ e.target.value='';
+};
+
+undoBtn.onclick=undoEdit;
+redoBtn.onclick=redoEdit;
+document.addEventListener('keydown',e=>{
+ const mod=e.ctrlKey||e.metaKey;
+ if(!mod)return;
+ if(document.getElementById('shakuCalc')?.contains(document.activeElement))return;
+
+ const key=e.key.toLowerCase();
+ if(key==='z' && !e.shiftKey){
+   if(!undoStack.length)return;
+   e.preventDefault();undoEdit();return;
+ }
+ if((key==='y') || (key==='z' && e.shiftKey)){
+   if(!redoStack.length)return;
+   e.preventDefault();redoEdit();
+ }
+});
+updateHistoryButtons();
+
+updateWakeLockButton();
+wakeLockBtn.onclick=()=>setWakeLockWanted(!wakeLockWanted,true);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible'&&wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0);
+ else if(document.visibilityState==='hidden')updateWakeLockButton();
+});
+window.addEventListener('pageshow',()=>{updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0)});
+window.addEventListener('pagehide',releaseWakeLockForBackground);
+
+document.getElementById('projectNameInput').addEventListener('input',e=>{
+ if(projectName===e.target.value)return;
+ pushUndoSnapshotForInput('projectName');
+ projectName=e.target.value;
+ scheduleSave();
+ refreshProjectInfo();
+});
+openIoBtn.onclick=()=>{refreshProjectInfo();ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
+closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
+ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
+document.getElementById('exportShareBtn').addEventListener('click',showExportShareCode);
+document.getElementById('importShareBtn').addEventListener('click',()=>openShareBox('import'));
+document.getElementById('copyShareCode').addEventListener('click',copyShareCodeText);
+document.getElementById('copyShareText').addEventListener('click',copyShareTextForSharing);
+document.getElementById('restoreShareCode').addEventListener('click',restoreShareCodeFromText);
+document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
+
+resetProjectBtn.onclick=resetProjectData;
+exportDeviceCsvBtn.onclick=exportDeviceSetupCsv;
+exportCueCsvBtn.onclick=exportCueSheetCsv;
+exportJsonBtn.onclick=exportProjectJson;
+importJsonBtn.onclick=()=>importJsonFile.click();
+importJsonFile.onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+   const obj=JSON.parse(await file.text());
+   if(importProjectJson(obj))clearEditHistory();
+ }catch(err){
+   console.error(err);
+   alert('JSONの読み込みに失敗しました。ファイル内容を確認してください。');
+ }
+ e.target.value='';
+};
+
+load();devices.forEach(d=>{if(!Number.isFinite(+d.initialPosition))d.initialPosition=+d.machineMax;const lo=+d.machineMin,hi=+d.machineMax;if(Number.isFinite(lo)&&Number.isFinite(hi))d.initialPosition=Math.max(lo,Math.min(hi,+d.initialPosition));if(!d.displayColor)d.displayColor=d.type==='curtain'?'#b51f2e':'#707780';if(d.displayOpacity==null)d.displayOpacity=1});lastProjectContent=projectContent();refreshProjectInfo();renderDeviceList();renderSettings();renderInitialBulk();renderCueList();selectCue(Math.min(2,cues.length-1));
+updateWakeLockButton();if(wakeLockWanted)setTimeout(()=>acquireWakeLock(false),0);
+</script>
+</body>
+</html>
