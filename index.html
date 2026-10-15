@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター / PC・Tablet試作 v65</title>
+<title>舞台機構シミュレーター v2.1</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -14,9 +14,10 @@
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:"BIZ UDGothic","BIZ UDゴシック","MS Gothic",monospace;overflow:hidden}
 button,input,select{font:inherit}
 .topbar{height:54px;display:flex;align-items:center;gap:4px;padding:6px 8px;background:#191d1f;border-bottom:1px solid #667174;overflow:hidden}
-.tab-strip{display:flex;align-items:center;gap:4px;min-width:0}
-.top-utility-strip{display:flex;align-items:center;gap:4px;min-width:0;margin-left:auto}
-.tab-btn{height:34px;min-width:0;flex:0 1 112px;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;font-size:11px;padding:0 8px;white-space:nowrap;cursor:pointer}
+.tab-strip{display:flex;align-items:center;gap:4px;flex:1 0 max-content;min-width:max-content;max-width:576px}
+.top-utility-strip{display:flex;align-items:center;gap:4px;flex:0 1 auto;min-width:0;margin-left:auto;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.top-utility-strip>*{flex:0 0 auto}
+.tab-btn{height:34px;min-width:max-content;flex:1 0 max-content;border:1px solid #159be3;background:#006cac;color:white;border-radius:3px;font-weight:700;font-size:11px;padding:0 8px;white-space:nowrap;cursor:pointer}
 .tab-btn.active{background:#0898df;box-shadow:inset 0 -3px 0 #9ef0ff}
 .top-file-actions{display:flex;gap:6px;margin-left:0}
 .file-btn{height:30px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:3px;padding:0 7px;font-size:11px;white-space:nowrap;cursor:pointer}
@@ -145,13 +146,13 @@ button,input,select{font:inherit}
 .initial-full-table .mmcol{width:150px}
 .initial-full-table .rangecol{width:170px;color:#b9c5c9}
 @media(max-width:1200px){.settings-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:1500px){.app-title{display:none}.tab-btn{flex-basis:100px;padding:0 6px}.file-btn{padding:0 6px}.history-actions button{padding:0 5px}}
-@media(max-width:1250px){.save-state{display:none}.tab-btn{flex-basis:92px;font-size:10px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
+@media(max-width:1500px){.app-title{display:none}.tab-btn{padding:0 6px}.file-btn{padding:0 6px}.history-actions button{padding:0 5px}}
+@media(max-width:1250px){.save-state{display:none}.tab-btn{font-size:11px}.topbar{gap:3px;padding-left:5px;padding-right:5px}.file-btn{font-size:10px;padding:0 5px}.history-actions button{font-size:10px}}
 @media (orientation:portrait) and (max-width:1024px){
   html,body{overscroll-behavior:none}
   .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
-  .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
-  .tab-btn{width:100%;height:36px;min-width:0;max-width:none;flex:none;padding:0 3px;font-size:10px}
+  .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+  .tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
   .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
   .top-utility-strip>*{flex:0 0 auto}
   .history-actions,.top-file-actions{margin-left:0;gap:4px}
@@ -358,14 +359,27 @@ button,input,select{font:inherit}
 
 /* v59: coarse-pointer landscape startup layout. Keep the tab row visible even when utility controls are wide. */
 html.tablet-landscape .topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
-html.tablet-landscape .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;width:100%}
-html.tablet-landscape .tab-btn{width:100%;height:36px;min-width:0;max-width:none;flex:none;padding:0 3px;font-size:10px}
+html.tablet-landscape .tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+html.tablet-landscape .tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
 html.tablet-landscape .top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
 html.tablet-landscape .top-utility-strip>*{flex:0 0 auto}
 html.tablet-landscape .history-actions,html.tablet-landscape .top-file-actions{margin-left:0;gap:4px}
 html.tablet-landscape .history-actions button,html.tablet-landscape .file-btn{height:36px;font-size:10px;padding:0 7px}
 html.tablet-landscape .save-state,html.tablet-landscape .app-title{display:none}
 html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+
+/* v2.1: layout is correct on the first landscape paint, without waiting for rotation. */
+@media (orientation:landscape) and (any-pointer:coarse){
+.topbar{height:92px;display:block;padding:4px 5px;overflow:hidden}
+.tab-strip{height:39px;display:grid;grid-template-columns:repeat(5,minmax(max-content,1fr));gap:3px;width:100%;max-width:none;min-width:0;flex:none}
+.tab-btn{width:100%;height:36px;min-width:max-content;max-width:none;flex:none;padding:0 3px;font-size:11px}
+.top-utility-strip{height:45px;margin:0;padding-top:4px;display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.top-utility-strip>*{flex:0 0 auto}
+.history-actions,.top-file-actions{margin-left:0;gap:4px}
+.history-actions button,.file-btn{height:36px;font-size:10px;padding:0 7px}
+.save-state,.app-title{display:none}
+.tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
+}
 
 /* v60: consolidated I/O sheet + share code */
 /* v61: consecutive GO runtime mixing in section monitor */
@@ -376,8 +390,8 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 .file-btn.primary-io{background:#006fad;border-color:#13a5ee;font-weight:800}
 .wake-lock-btn{background:#3b4549;border-color:#6b7a80;font-weight:800;white-space:nowrap}.wake-lock-btn.active{background:#176b3b;border-color:#47c77a;color:#fff}.wake-lock-btn.waiting{background:#66521b;border-color:#caa63a;color:#fff}.wake-lock-btn:disabled{opacity:.55}
 .io-modal{position:fixed;inset:0;z-index:500;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62);padding:12px}
-.io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
-.io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
+.io-modal.open{display:flex}.io-sheet{width:min(760px,100%);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;min-width:0;overscroll-behavior:contain;background:#20272a;color:#fff;border:1px solid #6b777c;border-radius:14px 14px 7px 7px;padding:14px;box-shadow:0 -20px 50px rgba(0,0,0,.45);-webkit-overflow-scrolling:touch}
+.io-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.io-head h3{margin:0}.io-head .grow{flex:1}.io-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.io-grid button{min-height:42px;min-width:0;white-space:normal;overflow-wrap:anywhere;background:#3b4549;color:#fff;border:1px solid #6b7a80;border-radius:5px}.io-grid button.primary{background:#006fad;border-color:#13a5ee;font-weight:800}.io-grid button.danger{background:#7d292e;border-color:#b85259}.io-close{width:100%;margin-top:9px;min-height:40px;background:#343d41;color:#fff;border:1px solid #68757a;border-radius:5px}
 .share-box{display:none;margin-top:10px;padding:10px;border:1px solid #586164;border-radius:7px;background:#171c1e}.share-box.open{display:block}.share-box textarea{width:100%;min-height:145px;resize:vertical;background:#111516;color:#fff;border:1px solid #7c878b;padding:9px;font:11px/1.45 monospace;word-break:break-all}.share-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.share-actions button{flex:1 1 140px;min-height:38px}.share-message{margin-top:7px;font-size:11px;color:#aeb9bd;line-height:1.5}.share-message.ok{color:#8fd6a4}.share-message.error{color:#ff8f98}.share-meta{font-size:11px;color:#aeb9bd}
 .io-project-info{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #586164;border-radius:6px;background:#171c1e}
 .io-project-name{display:flex;flex:1 1 300px;min-width:0;flex-direction:column;gap:5px;font-size:12px;color:#dce5e8}
@@ -385,6 +399,31 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 .io-updated-at{flex:1 1 220px;min-width:0;line-height:1.6}
 @media(max-width:560px){.io-grid{grid-template-columns:1fr}.io-modal{padding:6px}.io-sheet{max-height:calc(100dvh - 12px)}}
 
+/* v2.0: installed auxiliary equipment stays outside section geometry. */
+#otherPermanentGroup{margin-top:10px;min-width:0}
+#otherPermanentGroup summary{cursor:pointer;min-height:38px;padding:8px 3px;font-size:12px;font-weight:700;color:#e8eef0}
+#otherPermanentList{min-width:0}
+#otherPermanentGroup:not([open]) #otherPermanentList{display:none}
+.permanent-usage{margin:0 0 10px;padding:10px;border:1px solid #6b7a80;background:#303a3e}
+.permanent-usage[hidden]{display:none}
+.permanent-usage label{display:flex;gap:8px;align-items:center;min-height:32px;font-weight:700}
+.permanent-usage input{width:20px;height:20px}
+.permanent-usage .small-muted{line-height:1.6;margin-top:4px;overflow-wrap:anywhere}
+@media (orientation:portrait) and (max-width:1024px){
+ .settings-shell{grid-template-rows:auto minmax(0,1fr)}
+ .device-list{min-height:76px;max-height:220px}
+ #otherPermanentGroup{margin-top:2px}
+ #otherPermanentGroup summary{min-height:36px;padding:8px 3px}
+ #otherPermanentList{display:flex;gap:4px;height:64px;overflow-x:auto;overflow-y:hidden;align-items:stretch;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+}
+
+/* v2.1: purpose-based I/O groups, in the same DOM order at every width. */
+.io-section{margin-top:16px;padding-top:12px;border-top:1px solid #465155}
+.io-section h4{margin:0 0 8px;font-size:13px;line-height:1.5;color:#dce5e8}
+.io-grid.io-single{grid-template-columns:minmax(0,1fr)}
+.io-reset{margin-top:26px;padding-top:18px;border-top:1px solid #6b777c}
+.io-reset button{width:100%;min-height:44px;padding:8px;background:#7d292e;color:#fff;border:1px solid #b85259;border-radius:5px;font:inherit;cursor:pointer}
+.io-reset button:hover{background:#96343b}
 </style>
 </head>
 <body>
@@ -405,7 +444,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター / PC・Tablet試作 v65</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.1</div>
   </div>
 </div>
 
@@ -417,22 +456,37 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     </label>
     <div class="share-meta io-updated-at">最終更新日時: <span id="ioUpdatedAt"></span></div>
   </div>
-  <div class="io-grid">
-    <button id="csvInitBtn" class="primary">装置CSV読込</button>
-    <button id="exportDeviceCsvBtn">装置CSV書出</button>
-    <button id="exportCueCsvBtn">キューCSV書出</button>
-    <button id="exportShareBtn" class="primary">共有コード書出</button>
-    <button id="importShareBtn">共有コード読込</button>
-    <button id="exportJsonBtn">JSON保存</button>
-    <button id="importJsonBtn">JSON読込</button>
-    <button id="resetProjectBtn" class="danger">全データリセット</button>
-  </div>
+  <section class="io-section" aria-label="保存・共有">
+    <h4>保存・共有</h4>
+    <div class="io-grid">
+      <button id="importShareBtn">共有コード読込</button>
+      <button id="exportShareBtn" class="primary">共有コード書出</button>
+      <button id="importJsonBtn">JSON読込</button>
+      <button id="exportJsonBtn">JSON保存</button>
+    </div>
+  </section>
+  <section class="io-section" aria-label="実機データの読込">
+    <h4>実機データの読込</h4>
+    <div class="io-grid io-single">
+      <button id="csvInitBtn" class="primary">装置CSV読込</button>
+    </div>
+  </section>
+  <section class="io-section" aria-label="記録表への書出">
+    <h4>記録表への書出</h4>
+    <div class="io-grid">
+      <button id="exportDeviceCsvBtn">装置CSV書出</button>
+      <button id="exportCueCsvBtn">キューCSV書出</button>
+    </div>
+  </section>
   <div id="shareBox" class="share-box">
     <div class="io-head"><strong id="shareTitle">共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
     <div class="share-meta">プロジェクト名: <span id="shareProjectName"></span> ／ 最終更新日時: <span id="shareUpdatedAt"></span></div>
     <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="SCUE1:... の共有コードをここへ貼り付け"></textarea>
     <div class="share-actions"><button id="copyShareCode" class="primary">コードをコピー</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
     <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
+  </div>
+  <div class="io-reset">
+    <button id="resetProjectBtn" class="danger">全データリセット</button>
   </div>
   <button id="closeIoBtn" class="io-close">閉じる</button>
   <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
@@ -488,7 +542,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 
 <section id="settings" class="tab">
   <div class="settings-shell">
-    <aside class="device-list"><h3>装置</h3><div id="deviceList"></div></aside>
+    <aside class="device-list"><h3>装置</h3><div id="deviceList"></div><details id="otherPermanentGroup"><summary>その他の常設装置</summary><div id="otherPermanentList"></div></details></aside>
     <main class="settings-detail">
       <h2 id="setTitle" style="margin-top:0">B1</h2>
       <div class="hanging-tools">
@@ -499,6 +553,10 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
         <span id="hangingClipState" class="hanging-clip-state">コピーなし</span>
       </div>
       <div id="csvStateNotice" class="small-muted" style="margin-bottom:8px">初回は上部の「装置CSV読込」から装置設定を作成できます。</div>
+      <div id="permanentUsagePanel" class="permanent-usage" hidden>
+        <label><input id="permanentEnabledInput" type="checkbox"> 使用する</label>
+        <div id="permanentUsageReason" class="small-muted"></div>
+      </div>
       <div id="specialNotice"></div>
       <div class="settings-grid">
         <div class="field"><label>機構名称</label><input id="s_id" readonly></div>
@@ -580,7 +638,50 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 </section>
 
 <script>
-const BASE_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
+// Explicit DOM bindings; never depend on named window properties.
+const [undoBtn,redoBtn,openIoBtn,wakeLockBtn,saveState,ioModal,projectNameInput,ioUpdatedAt,csvInitBtn,exportDeviceCsvBtn,exportCueCsvBtn,exportShareBtn,importShareBtn,exportJsonBtn,importJsonBtn,resetProjectBtn,shareBox,shareTitle,shareMeta,shareProjectName,shareUpdatedAt,shareCode,copyShareCode,copyShareText,restoreShareCode,clearShareCode,shareMessage,closeIoBtn,csvInitFile,importJsonFile,monitor,toggleMonitorCuePanel,stageScaleToggle,nowQNum,nowQName,monitorValidation,stageViewport,stageCanvas,prevQ,resetQ,nextQ,posModeToggle,goBtn,pauseBtn,stopBtn,monitorClock,seek,monitorCueBrowser,cue,cueList,newCueBtn,newMemoBtn,pasteCueBtn,renumberOpenBtn,cueEditor,settings,deviceList,otherPermanentGroup,otherPermanentList,setTitle,copyHangingBtn,cutHangingBtn,pasteHangingBtn,deleteHangingBtn,hangingClipState,csvStateNotice,permanentUsagePanel,permanentEnabledInput,permanentUsageReason,specialNotice,s_id,s_item,s_height,s_hang,s_color,s_opacity,s_opacityValue,labelBody,initial,setAllTop,setEmptyUpper,initialBulkBody,shakuCalc,shakuInput,mmInput,shakuResult,calcA,calcOp,calcB,calcResult,calcMessage]=["undoBtn", "redoBtn", "openIoBtn", "wakeLockBtn", "saveState", "ioModal", "projectNameInput", "ioUpdatedAt", "csvInitBtn", "exportDeviceCsvBtn", "exportCueCsvBtn", "exportShareBtn", "importShareBtn", "exportJsonBtn", "importJsonBtn", "resetProjectBtn", "shareBox", "shareTitle", "shareMeta", "shareProjectName", "shareUpdatedAt", "shareCode", "copyShareCode", "copyShareText", "restoreShareCode", "clearShareCode", "shareMessage", "closeIoBtn", "csvInitFile", "importJsonFile", "monitor", "toggleMonitorCuePanel", "stageScaleToggle", "nowQNum", "nowQName", "monitorValidation", "stageViewport", "stageCanvas", "prevQ", "resetQ", "nextQ", "posModeToggle", "goBtn", "pauseBtn", "stopBtn", "monitorClock", "seek", "monitorCueBrowser", "cue", "cueList", "newCueBtn", "newMemoBtn", "pasteCueBtn", "renumberOpenBtn", "cueEditor", "settings", "deviceList", "otherPermanentGroup", "otherPermanentList", "setTitle", "copyHangingBtn", "cutHangingBtn", "pasteHangingBtn", "deleteHangingBtn", "hangingClipState", "csvStateNotice", "permanentUsagePanel", "permanentEnabledInput", "permanentUsageReason", "specialNotice", "s_id", "s_item", "s_height", "s_hang", "s_color", "s_opacity", "s_opacityValue", "labelBody", "initial", "setAllTop", "setEmptyUpper", "initialBulkBody", "shakuCalc", "shakuInput", "mmInput", "shakuResult", "calcA", "calcOp", "calcB", "calcResult", "calcMessage"].map(id=>document.getElementById(id));
+const STANDARD_DEVICES=[{"id": "割UD", "sourceId": "割UD", "itemName": "", "toolHeight": 10000, "userMin": 0, "userMax": 10100, "machineMin": 0, "machineMax": 10100, "labels": [], "defaultSpeed": 1000, "type": "curtain", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "暗転幕", "sourceId": "暗転幕", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B1", "sourceId": "B1", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B2", "sourceId": "B2", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B3", "sourceId": "B3", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB1", "sourceId": "LB1", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B4", "sourceId": "B4", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B5", "sourceId": "B5", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B6", "sourceId": "B6", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B7", "sourceId": "B7", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB2", "sourceId": "LB2", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B8", "sourceId": "B8", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B9", "sourceId": "B9", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B10", "sourceId": "B10", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B11", "sourceId": "B11", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "LB3", "sourceId": "LB3", "itemName": "", "toolHeight": 0, "userMin": 850.0, "userMax": 13850.0, "machineMin": 850.0, "machineMax": 13850.0, "labels": [], "defaultSpeed": 83, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B12", "sourceId": "B12", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B13", "sourceId": "B13", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B14", "sourceId": "B14", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B15", "sourceId": "B15", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B16", "sourceId": "B16", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B17", "sourceId": "B17", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B18", "sourceId": "B18", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B19", "sourceId": "B19", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B20", "sourceId": "B20", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B21", "sourceId": "B21", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B22", "sourceId": "B22", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B23", "sourceId": "B23", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "UHL", "sourceId": "UHL", "itemName": "", "toolHeight": 0, "userMin": 900.0, "userMax": 13400.0, "machineMin": 900.0, "machineMax": 13400.0, "labels": [], "defaultSpeed": 167, "type": "constant", "hangOffset": 0, "defaultAcc": 0.1, "defaultDec": 0.1}, {"id": "B24", "sourceId": "B24", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B25", "sourceId": "B25", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B26", "sourceId": "B26", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}, {"id": "B27", "sourceId": "B27", "itemName": "", "toolHeight": 0, "userMin": 300, "userMax": 20300, "machineMin": 300, "machineMax": 20300, "labels": [], "defaultSpeed": 1000, "type": "baton", "hangOffset": 0, "defaultAcc": 2, "defaultDec": 2}];
+// Theater-installed equipment; usage is project data, section visibility is independent.
+const OTHER_PERMANENT_DEVICES=[{"id":"客SL","sourceId":"客SL","itemName":"","toolHeight":0,"hangOffset":0,"userMin":900,"userMax":9600,"machineMin":900,"machineMax":9600,"initialPosition":9600,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS1","sourceId":"上SS1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS1","sourceId":"下SS1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS2","sourceId":"上SS2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS2","sourceId":"下SS2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS3","sourceId":"上SS3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS3","sourceId":"下SS3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"上SS4","sourceId":"上SS4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"下SS4","sourceId":"下SS4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":12800,"machineMin":300,"machineMax":12800,"initialPosition":12800,"labels":[],"type":"constant","defaultSpeed":167,"defaultAcc":0.1,"defaultDec":0.1,"enabled":false},{"id":"点吊1","sourceId":"点吊1","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊2","sourceId":"点吊2","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊3","sourceId":"点吊3","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊4","sourceId":"点吊4","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊5","sourceId":"点吊5","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊6","sourceId":"点吊6","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊7","sourceId":"点吊7","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊8","sourceId":"点吊8","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊9","sourceId":"点吊9","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false},{"id":"点吊10","sourceId":"点吊10","itemName":"","toolHeight":0,"hangOffset":0,"userMin":300,"userMax":20300,"machineMin":300,"machineMax":20300,"initialPosition":20300,"labels":[],"type":"baton","defaultSpeed":1000,"defaultAcc":2,"defaultDec":2,"enabled":false}];
+const OTHER_PERMANENT_IDS=new Set(OTHER_PERMANENT_DEVICES.map(d=>d.id));
+const BASE_DEVICES=[...STANDARD_DEVICES,...OTHER_PERMANENT_DEVICES];
+const DEVICE_CSV_IDS=[...STANDARD_DEVICES].reverse().map(d=>d.id).concat(OTHER_PERMANENT_DEVICES.map(d=>d.id));
+function isOtherPermanent(d){return !!d&&OTHER_PERMANENT_IDS.has(d.id)}
+function isDeviceEnabled(d){return !!d&&(!isOtherPermanent(d)||d.enabled===true)}
+function selectableDevices(){return devices.filter(isDeviceEnabled)}
+function sectionDevices(){return devices.filter(d=>!isOtherPermanent(d))}
+function deviceCsvOrder(){return DEVICE_CSV_IDS.map(id=>dev(id)).filter(isDeviceEnabled)}
+function normalizeInstalledDevices(source,projectCues=[]){
+ const byId=new Map(source.map(d=>[d.id,d]));
+ const referenced=new Set(projectCues.flatMap(q=>q.kind==='memo'?[]:(q.runs||[]).map(r=>r.device)));
+ const standard=source.filter(d=>!isOtherPermanent(d)).map(d=>JSON.parse(JSON.stringify(d)));
+ const extra=OTHER_PERMANENT_DEVICES.map(base=>{
+   const old=byId.get(base.id),d={...JSON.parse(JSON.stringify(base)),...JSON.parse(JSON.stringify(old||{}))};
+   // Machine characteristics cannot be redefined by project imports.
+   for(const k of ['id','sourceId','type','machineMin','machineMax','userMin','userMax'])d[k]=base[k];
+   d.enabled=old?.enabled===true||(old?.enabled==null&&referenced.has(base.id));
+   if(d.type==='constant'){d.defaultSpeed=167;d.defaultAcc=0.1;d.defaultDec=0.1}
+   d.initialPosition=Number.isFinite(+d.initialPosition)?Math.max(base.machineMin,Math.min(base.machineMax,+d.initialPosition)):base.machineMax;
+   return d;
+ });
+ return [...standard,...extra];
+}
+function permanentCueReferences(id){
+ return cues.filter(q=>!isMemoEntry(q)&&(q.runs||[]).some(r=>r.device===id)).map(q=>formatCueNumber(q.number)||q.number);
+}
+function permanentUsageRestriction(id){
+ const refs=permanentCueReferences(id);
+ return refs.length?`Cue ${refs.join('、')} で使用中です。対象の運転行を削除するか、別の装置へ変更するとOFFにできます。`:'';
+}
+function setPermanentDeviceUsage(id,enabled){
+ const d=dev(id);if(!isOtherPermanent(d))return false;
+ if(!enabled&&permanentUsageRestriction(id))return false;
+ if(d.enabled===enabled)return true;
+ pushUndoSnapshot();d.enabled=enabled;save();
+ renderDeviceList();renderSettings();renderInitialBulk();renderCueEditor();renderMonitorCueBrowser();
+ return true;
+}
+
 const KEY='stageCuePrototypeV3';
 const deep=x=>JSON.parse(JSON.stringify(x));
 let devices=deep(BASE_DEVICES);
@@ -738,7 +839,7 @@ function load(){
   const d=JSON.parse(raw);
   const checked=validateProjectPayload(d);
   if(!checked.ok)throw new Error(checked.msg);
-  devices=deep(d.devices);
+  devices=normalizeInstalledDevices(d.devices,d.cues);
   cues=deep(d.cues);normalizeCueEntries();
   if(!cues.length)cues=[{number:'001.00',name:'新規キュー',runs:[]}];
   projectName=typeof d.projectName==='string'?d.projectName:'';
@@ -831,7 +932,7 @@ function restoreHistorySnapshot(s){
  cancelAnimationFrame(raf);
  clearTimeout(saveTimer);
 
- devices=deep(s.devices);
+ devices=normalizeInstalledDevices(s.devices,s.cues);
  cues=deep(s.cues);
  projectName=s.projectName??'';
  normalizeCueEntries();
@@ -888,7 +989,7 @@ function resetProjectData(){
  );
  if(!ok)return;
 
- running=false;
+ running=false;liveSession=null;
  cancelAnimationFrame(raf);
  clearTimeout(saveTimer);
 
@@ -963,7 +1064,7 @@ function decodeCsvBuffer(buf){
 }
 function isTargetCsvDevice(id){
  return id==='割UD' || id==='暗転幕' || id==='UHL' ||
-        /^LB[1-3]$/.test(id) || /^B(?:[1-9]|1\d|2[0-7])$/.test(id);
+        /^LB[1-3]$/.test(id) || /^B(?:[1-9]|1\d|2[0-7])$/.test(id) || OTHER_PERMANENT_IDS.has(id);
 }
 function normalizeCsvNumber(v){
  if(v==null)return null;
@@ -982,7 +1083,7 @@ function deviceFromCsvRow(cols,oldDevice){
    const pos=normalizeCsvNumber(cols[9+i*2]);
    if(name!=='' && pos!==null)labels.push({name,pos});
  }
- const dtype=id==='割UD'?'curtain':((id==='UHL'||/^LB[1-3]$/.test(id))?'constant':'baton');
+ const dtype=BASE_DEVICES.find(d=>d.id===id)?.type||'baton';
  const d=oldDevice?deep(oldDevice):{
    id,sourceId:id,itemName:'',toolHeight:0,userMin:300,userMax:20300,
    machineMin:300,machineMax:20300,labels:[],defaultSpeed:1000,
@@ -1020,7 +1121,7 @@ function importInitialSetupCsv(textCsv){
  const parsed=lines.map(parseCsvLine);
  const rows=parsed.filter(r=>isTargetCsvDevice((r[0]||'').trim()));
  if(!rows.length){
-   alert('対象装置（割UD、暗転幕、LB1〜3、UHL、B1〜B27）が見つかりませんでした。');
+   alert('対象装置（標準装置、客SL、SS、点吊）が見つかりませんでした。');
    return;
  }
  const oldMap=new Map(devices.map(d=>[d.id,d]));
@@ -1030,12 +1131,12 @@ function importInitialSetupCsv(textCsv){
    imported.set(id,deviceFromCsvRow(row,oldMap.get(id)));
  }
  // Preserve the theater's fixed display order; only setup fields come from the CSV.
- devices=BASE_DEVICES.map(base=>{
+ devices=normalizeInstalledDevices(BASE_DEVICES.map(base=>{
    const d=imported.get(base.id);
    if(d)return d;
    const old=oldMap.get(base.id);
    return old?deep(old):deep(base);
- });
+ }),cues);
  selectedDevice=devices.find(d=>d.id==='B1')?'B1':devices[0].id;
  save();
  renderDeviceList();renderSettings();renderInitialBulk();renderCueEditor();renderStage(0);
@@ -1073,7 +1174,7 @@ function csvTargetLabel(d,r){
 function exportDeviceSetupCsv(){
  // 記録用タッパ表へコピペしやすい形式。
  // 舞台奥 → 舞台前の順。荷重はアプリで管理していないため空欄。
- const ordered=[...devices].reverse();
+ const ordered=deviceCsvOrder();
 
  // 同時に存在するラベル同士は同じ列ペアに入れられない。
  // ラベル名をノード、同一バトン内で共存するラベルを衝突関係として、
@@ -1375,6 +1476,7 @@ function validateProjectPayload(obj){
    if(ids.has(id))return {ok:false,msg:`機構ID「${id}」が重複しています。`};
    ids.add(id);
    if(!['baton','curtain','constant'].includes(d.type))return {ok:false,msg:`${id}: type が不正です。`};
+   if(isOtherPermanent(d)&&d.enabled!=null&&typeof d.enabled!=='boolean')return {ok:false,msg:`${id}: 使用ON/OFFが不正です。`};
    if(d.itemName!=null && typeof d.itemName!=='string')return {ok:false,msg:`${id}: 吊り物名称が不正です。`};
    for(const k of ['machineMin','machineMax','userMin','userMax','toolHeight','hangOffset','defaultSpeed','defaultAcc','defaultDec']){
      if(d[k]!=null && d[k]!=='' && !Number.isFinite(+d[k]))return {ok:false,msg:`${id}: ${k} が数値ではありません。`};
@@ -1408,6 +1510,7 @@ function validateProjectPayload(obj){
      const r=q.runs[ri];
      if(!r || typeof r!=='object')return {ok:false,msg:`Cue ${qi+1} / 運転${ri+1}: 形式が不正です。`};
      if(typeof r.device!=='string' || !ids.has(r.device))return {ok:false,msg:`Cue ${qi+1}: 未登録機構「${String(r.device??'')}」を参照しています。`};
+     if(OTHER_PERMANENT_IDS.has(r.device)&&obj.devices.find(d=>d.id===r.device)?.enabled===false)return {ok:false,msg:`${r.device}: Cueで使用中のためOFFにできません。`};
      if(r.targetMode!=null && typeof r.targetMode!=='string')return {ok:false,msg:`Cue ${qi+1} / ${r.device}: targetMode が不正です。`};
      if(!Number.isFinite(+r.target))return {ok:false,msg:`Cue ${qi+1} / ${r.device}: 目標位置が不正です。`};
      for(const k of ['speed','acc','dec','delay']){
@@ -1426,7 +1529,7 @@ function importProjectJson(obj,{silent=false}={}){
 
  const before={devices:deep(devices),cues:deep(cues),projectName,updatedAt,lastProjectContent,selectedCue,selectedListIndex,selectedDevice};
  try{
-   const nextDevices=deep(obj.devices);
+   const nextDevices=normalizeInstalledDevices(obj.devices,obj.cues);
    const nextCues=deep(obj.cues);
    devices=nextDevices;
    cues=nextCues;
@@ -1562,6 +1665,7 @@ function solvePrimarySpeedFromTime(r,start,requestedTime){
 function validateRun(r,start){
  const d=dev(r.device);
  if(!d)return {ok:false,msg:'機器を確認してください'};
+ if(!isDeviceEnabled(d))return {ok:false,msg:`${d.id} は使用OFFです。装置設定でONにしてください`};
  syncRunTargetFromLabel(r);
  const end=+r.target;
  const delay=Number(r.delay??0);
@@ -1931,26 +2035,27 @@ function stageLayout(width){
    if(a==='UHL' && b==='B24') return 600;
    return 300;
  };
+ const drawnDevices=sectionDevices();
  const physical={};
  let mm=0;
- physical[devices[0].id]=0;
- for(let i=1;i<devices.length;i++){
-   mm+=gapMM(devices[i-1].id,devices[i].id);
-   physical[devices[i].id]=mm;
+ if(drawnDevices.length)physical[drawnDevices[0].id]=0;
+ for(let i=1;i<drawnDevices.length;i++){
+   mm+=gapMM(drawnDevices[i-1].id,drawnDevices[i].id);
+   physical[drawnDevices[i].id]=mm;
  }
  const total=Math.max(1,mm);
  const usable=width*0.78;
  const pxPerMM=usable/total;
  const left=(width-usable)/2;
  const xMap={};
- devices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
+ drawnDevices.forEach(d=>{xMap[d.id]=left+(total-physical[d.id])*pxPerMM;});
  return {xMap,pxPerMM,totalMM:total};
 }
 function sizeStageCanvas(){
  const vp=document.getElementById('stageViewport'),c=document.getElementById('stageCanvas');
  if(!vp||!c)return;
  if(stageScaleMode==='equal'){
-   const targetW=Math.max(vp.clientWidth,Math.max(1180,devices.length*40+160));
+   const targetW=Math.max(vp.clientWidth,Math.max(1180,sectionDevices().length*40+160));
    const xScale=stageLayout(targetW).pxPerMM;
    const targetH=Math.max(vp.clientHeight,Math.ceil(48+18+21550*xScale));
    c.style.width=targetW+'px';
@@ -1994,7 +2099,7 @@ function renderStage(t=0){
  proc.style.left=Math.min(w*0.94,curtainX+22)+'px';
  proc.style.right='3%';
  c.appendChild(proc);
- devices.forEach((d,i)=>{
+ sectionDevices().forEach((d,i)=>{
   const x=xMap[d.id];
   const active=liveSession?runtimeDeviceActive(d.id,runtimeNow):(cues[selectedCue].runs||[]).some(r=>r.device===d.id);
   const dl=document.createElement('div');dl.className='dev-label';dl.style.left=x+'px';dl.textContent=d.id;c.appendChild(dl);
@@ -2274,8 +2379,8 @@ function inferRunTargetMode(r){
    r.targetMode='direct';
    return r.targetMode;
  }
- const l=d.labels.find(x=>Math.abs(+x.pos-(+r.target))<0.001);
- r.targetMode=l?l.name:'direct';
+ const matches=d.labels.filter(x=>Math.abs(+x.pos-(+r.target))<0.001);
+ r.targetMode=matches.length===1?matches[0].name:'direct';
  return r.targetMode;
 }
 function targetOptions(d,r){
@@ -2296,6 +2401,7 @@ function renderCueEditor(){
      </div>
      <div class="small-muted" style="margin-top:10px">メモはキューリストに表示されますが、GO・前Q・次Q・自動送りでは飛ばされます。</div>
    </div>`;
+   const [editMemoText,moveMemoUp,moveMemoDown,deleteMemo]=["editMemoText", "moveMemoUp", "moveMemoDown", "deleteMemo"].map(id=>document.getElementById(id));
    editMemoText.oninput=e=>{pushUndoSnapshotForInput(`memo:${selectedListIndex}`);q.text=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
    moveMemoUp.onclick=()=>{
      if(selectedListIndex<=0)return;
@@ -2334,7 +2440,7 @@ function renderCueEditor(){
    const duplicate=(counts.get(String(r.device??''))||0)>1;
    return `<tr class="${validation.ok?'':'invalid'}">
     <td class="row-select"><input type="checkbox" data-rowcheck="${ri}"></td>
-    <td><select data-ri="${ri}" data-f="device">${devices.map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
+    <td><select data-ri="${ri}" data-f="device">${selectableDevices().map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===r.device?'selected':''}>${escapeHtml(x.id)}｜${escapeHtml(x.itemName||'（吊物なし）')}</option>`).join('')}</select></td>
     <td class="readonly">${escapeHtml(positionDisplayText(d,starts[r.device]??initialPosition(d),startLabels[r.device]))}</td>
     <td class="run-direction ${direction==='▲'?'direction-up':direction==='▼'?'direction-down':''}" title="運転方向">${direction}</td>
     <td><select class="target" data-ri="${ri}" data-f="targetSelect">${targetOptions(d,r)}</select></td>
@@ -2357,6 +2463,7 @@ function renderCueEditor(){
  <div class="renumber-box" id="renumberBox" style="display:none"><div><label>開始位置（一覧の何番目）</label><input id="rnStartIndex" type="number" min="1" value="1"></div><div><label>終了位置</label><input id="rnEndIndex" type="number" min="1" value="${cues.length}"></div><div><label>開始Q番号</label><input id="rnStartNumber" value="${escapeHtml(q.number)}"></div><div><label>刻み</label><input id="rnStep" value="1.00"></div><div><button id="runRenumber" class="primary">振り直す</button></div></div>
  <table class="run-table"><colgroup><col style="width:34px"><col style="width:190px"><col style="width:88px"><col style="width:40px"><col style="width:150px"><col style="width:90px"><col style="width:85px"><col style="width:85px"><col style="width:88px"><col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:48px"><col style="width:90px"><col style="width:85px"><col style="width:70px"></colgroup>
  <thead><tr><th><input id="selectAllRuns" type="checkbox" title="全選択"></th><th>機器 / 吊物</th><th>現在地</th><th>方向</th><th>目標ラベル</th><th>目標</th><th>距離</th><th>速度</th><th title="入力すると速度を逆算（遅延を除く）">運転タイム↔</th><th>加速</th><th>減速</th><th>遅延</th><th>2位置</th><th>2位置mm</th><th>2速度</th><th>2加減</th></tr></thead><tbody>${rows}</tbody></table><button class="add-row" id="addRun">＋ 運転行追加</button></div>`;
+ const [editQNum,editQName,previewQ,moveCueUp,moveCueDown,copyCue,duplicateQ,deleteCue,copyRows,pasteRows,deleteRows,editPosModeToggle,renumberBox,rnStartIndex,rnEndIndex,rnStartNumber,rnStep,runRenumber,addRun]=["editQNum", "editQName", "previewQ", "moveCueUp", "moveCueDown", "copyCue", "duplicateQ", "deleteCue", "copyRows", "pasteRows", "deleteRows", "editPosModeToggle", "renumberBox", "rnStartIndex", "rnEndIndex", "rnStartNumber", "rnStep", "runRenumber", "addRun"].map(id=>document.getElementById(id));
  editQNum.oninput=e=>{pushUndoSnapshotForInput(`qnum:${selectedListIndex}`);q.number=e.target.value;scheduleSave();renderCueList();renderMonitorCueBrowser()};
  editQNum.onblur=e=>{
    const formatted=formatCueNumber(e.target.value);
@@ -2404,7 +2511,7 @@ function renderCueEditor(){
  cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.onchange=()=>{const all=document.getElementById('selectAllRuns');const checks=[...cueEditor.querySelectorAll('[data-rowcheck]')];if(all)all.checked=checks.length>0&&checks.every(x=>x.checked);updateRunSelectionActions()});
  const selectAll=document.getElementById('selectAllRuns');if(selectAll)selectAll.onchange=()=>{cueEditor.querySelectorAll('[data-rowcheck]').forEach(cb=>cb.checked=selectAll.checked);updateRunSelectionActions()};
  updateRunSelectionActions();
- addRun.onclick=()=>{pushUndoSnapshot();const d=dev('B1')||devices[0];q.runs.push({device:d.id,targetMode:d.labels[0]?.name||'direct',target:d.labels[0]?.pos??d.machineMax,speed:1000,acc:2,dec:2,delay:0,use2:false,pos2:'',speed2:''});save();renderCueEditor()};
+ addRun.onclick=()=>{pushUndoSnapshot();const d=selectableDevices().find(x=>x.id==='B1')||selectableDevices()[0];if(!d)return;q.runs.push({device:d.id,targetMode:d.labels[0]?.name||'direct',target:d.labels[0]?.pos??d.machineMax,speed:1000,acc:2,dec:2,delay:0,use2:false,pos2:'',speed2:''});save();renderCueEditor()};
  editPosModeToggle.onclick=togglePositionDisplayMode;
  cueEditor.querySelectorAll('[data-ri][data-f]').forEach(el=>el.onchange=()=>{
    const ri=+el.dataset.ri,f=el.dataset.f,r=q.runs[ri];
@@ -2458,6 +2565,7 @@ function renderInitialBulk(){
  const body=document.getElementById('initialBulkBody');if(!body)return;
  body.innerHTML='';
  devices.forEach((d,i)=>{
+  if(!isDeviceEnabled(d))return;
   const p=initialPosition(d);
   const tr=document.createElement('tr');
   tr.innerHTML=`<td class="devcol">${escapeHtml(d.id)}</td><td class="itemcol">${escapeHtml(d.itemName||'—')}</td>
@@ -2487,14 +2595,17 @@ function renderInitialBulk(){
  }));
 }
 function renderDeviceList(){
- deviceList.innerHTML='';
+ const standardList=document.getElementById('deviceList'),otherList=document.getElementById('otherPermanentList');
+ standardList.innerHTML='';otherList.innerHTML='';
  devices.forEach(d=>{
-   const b=document.createElement('button');b.className='device-btn '+(d.id===selectedDevice?'active':'');
-   const name=document.createElement('span');name.textContent=d.id;
+   const b=document.createElement('button');b.type='button';b.className='device-btn '+(d.id===selectedDevice?'active':'');
+   const name=document.createElement('span');name.textContent=d.id+(isOtherPermanent(d)?(d.enabled?' ［ON］':' ［OFF］'):'');
    const item=document.createElement('small');item.textContent=d.itemName||'';
    b.append(name,item);
-   b.onclick=()=>{selectedDevice=d.id;renderDeviceList();renderSettings()};deviceList.appendChild(b);
+   b.addEventListener('click',()=>{selectedDevice=d.id;renderDeviceList();renderSettings()});
+   (isOtherPermanent(d)?otherList:standardList).appendChild(b);
  });
+ if(isOtherPermanent(dev(selectedDevice)))document.getElementById('otherPermanentGroup').open=true;
 }
 function hangingPackage(d){
  return {
@@ -2542,11 +2653,17 @@ function refreshAfterHangingEdit(){
 
 function renderSettings(){
  const d=dev(selectedDevice);if(!d)return;
+ const usagePanel=document.getElementById('permanentUsagePanel'),usageInput=document.getElementById('permanentEnabledInput'),usageReason=document.getElementById('permanentUsageReason');
+ usagePanel.hidden=!isOtherPermanent(d);
+ usageInput.checked=d.enabled===true;
+ const restriction=isOtherPermanent(d)?permanentUsageRestriction(d.id):'';
+ usageInput.disabled=!!restriction;
+ usageReason.textContent=restriction||'OFFでも設定は保持されます。使用ONの装置だけCue選択と初期位置一覧に表示します。断面図には表示しません。';
  setTitle.textContent=d.id+'　'+(d.itemName||'');
  s_id.value=d.id;s_item.value=d.itemName||'';s_height.value=d.toolHeight||0;s_hang.value=d.hangOffset||0;
  const palette=['#333333','#6f767a','#d9d9d9','#b51f2e','#d97b16','#d6bf28','#3d8b4f','#2e70b8','#7652a3'];
  s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((d.displayOpacity==null?1:d.displayOpacity)*100);s_opacityValue.textContent=s_opacity.value;
- if(d.type==='constant')specialNotice.innerHTML=`<div class="notice">${/^LB[1-3]$/.test(d.id)?'LB1〜3：83':'UHL：167'} mm/s 固定、加速0.1秒・減速0.1秒固定として扱います。</div>`;
+ if(d.type==='constant')specialNotice.innerHTML=`<div class="notice">${escapeHtml(d.id)}：${fixedDeviceSpeed(d)} mm/s 固定、加速0.1秒・減速0.1秒固定として扱います。可動範囲 ${d.machineMin}〜${d.machineMax} mm。</div>`;
  else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
  else specialNotice.innerHTML='';
  labelBody.innerHTML='';
@@ -2563,6 +2680,9 @@ function syncSettingsFromUI(){
  const arr=[];document.querySelectorAll('#labelBody tr').forEach(tr=>{const n=tr.querySelector('[data-k="name"]').value.trim(),p=tr.querySelector('[data-k="pos"]').value;if(n&&p!=='')arr.push({name:n,pos:+p})});d.labels=arr;
  scheduleSave();renderDeviceList();renderInitialBulk();renderMonitorCueBrowser();renderStage(+seek.value||0);
 }
+document.getElementById('permanentEnabledInput').addEventListener('change',e=>{
+ if(!setPermanentDeviceUsage(selectedDevice,e.target.checked))renderSettings();
+});
 copyHangingBtn.onclick=()=>{
  const d=dev(selectedDevice);if(!d)return;
  hangingItemClipboard={sourceId:d.id,data:hangingPackage(d)};
@@ -2610,6 +2730,7 @@ setAllTop.onclick=()=>{
  pushUndoSnapshot();
  const body=document.getElementById('initialBulkBody');
  devices.forEach((d,i)=>{
+   if(!isDeviceEnabled(d))return;
    const p=+d.machineMax;
    const input=body.querySelector(`input[data-bulk-i="${i}"]`);
    const sel=body.querySelector(`select[data-bulk-i="${i}"]`);
@@ -2709,6 +2830,7 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active');
  if(b.dataset.tab==='monitor')setTimeout(()=>{renderMonitorCueBrowser();renderStage(+seek.value||0)},0);
  if(b.dataset.tab==='initial')renderInitialBulk();
+ if(b.dataset.tab==='settings'){renderDeviceList();renderSettings();}
 });
 window.addEventListener('resize',()=>{syncTabletLandscapeClass();if(monitor.classList.contains('active'))renderStage(+seek.value||0)});
 csvInitBtn.onclick=()=>csvInitFile.click();
