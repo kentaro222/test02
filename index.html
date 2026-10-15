@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.2</title>
+<title>舞台機構シミュレーター v2.3</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -444,7 +444,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.2</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.3</div>
   </div>
 </div>
 
@@ -1723,20 +1723,23 @@ function validateRun(r,start){
  const minDecV2=minRampTime(v2);
  if(dec+1e-9<minDecV2)return {ok:false,msg:`2速度 ${Math.round(v2)} mm/s からの減速には ${minDecV2.toFixed(1)} 秒以上が必要です`};
 
- const D1=Math.abs(p2-start),D2=D-D1;
+ const D1=Math.abs(p2-start),D2=Math.abs(end-p2);
  const dAcc=v1*acc/2;
  const tBase=(D1-dAcc)/v1;
  if(tBase<0)return {ok:false,msg:'2位置までに始動加速を完了できません'};
 
- const tTrans=transitionDisplayTime(v1,v2);
- const dTrans=((v1+v2)/2)*tTrans;
+ // Raw transition time drives distance and timing; truncation is for display only.
+ const tTransRaw=Math.abs(v1-v2)/1000;
+ const tTransDisplay=transitionDisplayTime(v1,v2);
+ const dTrans=((v1+v2)/2)*tTransRaw;
  const dDec=v2*dec/2;
  const tV2=(D2-dTrans-dDec)/v2;
  if(tV2<0)return {ok:false,msg:'2位置から目的地までの距離が不足しています'};
 
  const tP2=acc+tBase;
- const total=tP2+tTrans+tV2+dec;
- return {ok:true,total,tTrans,D,D1,D2,tBase,tP2,tV2,dAcc,dTrans,dDec};
+ const totalRaw=tP2+tTransRaw+tV2+dec;
+ const total=floorTenthSafe(totalRaw);
+ return {ok:true,total,totalRaw,tTransRaw,tTransDisplay,D,D1,D2,tBase,tP2,tV2,dAcc,dTrans,dDec};
 }
 
 function cueValidation(index){
@@ -1804,25 +1807,29 @@ function runPositionAt(r,start,t){
    return motionPos(start,end,v1,acc,dec,scaled);
  }
 
- const p2=+r.pos2,v2=+r.speed2,tTrans=vr.tTrans;
+ // Animation time is scaled to the unrounded trajectory so the displayed
+ // operation time ends at the target continuously. This is a simulation mapping.
+ if(t>=delay+vr.total)return end;
+ const motionTime=lt*vr.totalRaw/vr.total;
+ const p2=+r.pos2,v2=+r.speed2,tTransRaw=vr.tTransRaw;
  const sign=end>=start?1:-1;
  const tP2=vr.tP2;
 
- if(lt<=acc){
-   return start+sign*(acc>0?.5*(v1/acc)*lt*lt:0);
+ if(motionTime<=acc){
+   return start+sign*(acc>0?.5*(v1/acc)*motionTime*motionTime:0);
  }
- if(lt<=tP2){
-   return start+sign*(vr.dAcc+v1*(lt-acc));
+ if(motionTime<=tP2){
+   return start+sign*(vr.dAcc+v1*(motionTime-acc));
  }
- if(lt<=tP2+tTrans){
-   if(tTrans<=0)return p2;
-   const u=lt-tP2,a2=(v2-v1)/tTrans;
+ if(motionTime<=tP2+tTransRaw){
+   if(tTransRaw<=0)return p2;
+   const u=motionTime-tP2,a2=(v2-v1)/tTransRaw;
    return p2+sign*(v1*u+.5*a2*u*u);
  }
- if(lt<=tP2+tTrans+vr.tV2){
-   return p2+sign*(vr.dTrans+v2*(lt-tP2-tTrans));
+ if(motionTime<=tP2+tTransRaw+vr.tV2){
+   return p2+sign*(vr.dTrans+v2*(motionTime-tP2-tTransRaw));
  }
- const u=lt-(tP2+tTrans+vr.tV2);
+ const u=motionTime-(tP2+tTransRaw+vr.tV2);
  if(u>=dec)return end;
  const beforeDec=p2+sign*(vr.dTrans+v2*vr.tV2);
  return beforeDec+sign*(v2*u-.5*(dec>0?v2/dec:0)*u*u);
@@ -1845,7 +1852,7 @@ function runLiveState(r,start,t){
  const delay=+r.delay||0;
  if(t<delay)return {label:'ディレイ',cls:'wait',second:false};
  const lt=Math.max(0,t-delay);
- if(lt>=vr.total)return {label:'完了',cls:'done',second:false};
+ if(lt>=vr.total || (d.type!=='constant'&&r.use2&&t>=delay+vr.total))return {label:'完了',cls:'done',second:false};
 
  if(d.type==='constant'){
    const fixedSpeed=fixedDeviceSpeed(d);
@@ -1871,13 +1878,14 @@ function runLiveState(r,start,t){
    return {label:'定速',cls:'run',second:false};
  }
 
+ const motionTime=lt*vr.totalRaw/vr.total;
  const acc=+r.acc||0;
  const tP2=vr.tP2;
- const tTrans=vr.tTrans;
- if(lt<=acc)return {label:'加速中',cls:'run',second:false};
- if(lt<tP2)return {label:'1速度',cls:'run',second:false};
- if(lt<tP2+tTrans)return {label:'2速度切替',cls:'switch',second:true};
- if(lt<tP2+tTrans+vr.tV2)return {label:'2速度',cls:'second',second:true};
+ const tTransRaw=vr.tTransRaw;
+ if(motionTime<=acc)return {label:'加速中',cls:'run',second:false};
+ if(motionTime<tP2)return {label:'1速度',cls:'run',second:false};
+ if(motionTime<tP2+tTransRaw)return {label:'2速度切替',cls:'switch',second:true};
+ if(motionTime<tP2+tTransRaw+vr.tV2)return {label:'2速度',cls:'second',second:true};
  return {label:'減速中',cls:'second',second:true};
 }
 
@@ -1922,19 +1930,21 @@ function liveVirtualNow(realNow=performance.now()){
  const anchor=liveSession.pauseStartedReal==null?realNow:liveSession.pauseStartedReal;
  return anchor-liveSession.pausedTotal;
 }
+function isTwoPositionMotion(m){return !!m.run?.use2&&dev(m.run.device)?.type!=='constant'}
 function runtimeMotionPosition(m,virtualNow){
  if(!m)return null;
  if(virtualNow<m.takeoverStamp){
    return m.previous?runtimeMotionPosition(m.previous,virtualNow):m.prePosition;
  }
  if(m.hold)return m.start;
+ if(isTwoPositionMotion(m)&&virtualNow>=m.endStamp)return +m.run.target;
  return runPositionAt(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
 }
 function runtimeMotionHasWork(m,virtualNow){
  if(!m)return false;
  if(virtualNow<m.takeoverStamp)return true; // delay / scheduled takeover still pending
  if(m.hold)return false;
- return virtualNow<m.endStamp-0.01;
+ return virtualNow<m.endStamp-(isTwoPositionMotion(m)?0:0.01);
 }
 function runtimePositions(virtualNow=liveVirtualNow()){
  if(!liveSession)return null;
@@ -2011,7 +2021,7 @@ function runtimeEntryState(entry,virtualNow){
    const priorMoving=m.previous&&runtimeMotionHasWork(m.previous,virtualNow);
    return {label:priorMoving?'前Q継続 / ディレイ':'ディレイ',cls:priorMoving?'run':'wait',second:false};
  }
- if(m.hold)return {label:'完了',cls:'done',second:false};
+ if(m.hold||(isTwoPositionMotion(m)&&virtualNow>=m.endStamp))return {label:'完了',cls:'done',second:false};
  return runLiveState(m.run,m.start,Math.max(0,(virtualNow-m.takeoverStamp)/1000));
 }
 function showMonitorRuntimeErrors(errors){
