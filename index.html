@@ -550,6 +550,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
         <button id="cutHangingBtn">カット</button>
         <button id="pasteHangingBtn" disabled>貼り付け</button>
         <button id="deleteHangingBtn" class="danger">削除</button>
+        <label>入れ替え先 <select id="swapHangingTarget" aria-label="吊り物の入れ替え先"></select></label>
+        <label><input id="swapHangingMotion" type="checkbox" checked> 初期位置・Cueも入れ替える</label>
+        <button id="swapHangingBtn">吊り物を入れ替え</button>
         <span id="hangingClipState" class="hanging-clip-state">コピーなし</span>
       </div>
       <div id="csvStateNotice" class="small-muted" style="margin-bottom:8px">初回は上部の「装置CSV読込」から装置設定を作成できます。</div>
@@ -582,7 +585,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     <div class="initial-header">
       <div>
         <h2>初期位置</h2>
-        <div class="small-muted">公演開始時の各機構位置を設定します。ラベル選択または mm 直接入力ができます。</div>
+        <div class="small-muted">公演開始時の各機構位置を設定します。ラベル選択または mm 直接入力ができます。数値は Enter または欄を離れると確定し、Esc で取消します。</div>
       </div>
       <div class="initial-actions">
         <button id="setAllTop" class="primary">全装置を最上限</button>
@@ -2597,12 +2600,30 @@ function renderInitialBulk(){
      scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
    }
  });
- body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>input.addEventListener('input',()=>{
-   pushUndoSnapshotForInput(`initial:${input.dataset.bulkI}`);
-   const d=devices[+input.dataset.bulkI];if(d)d.initialLabelName=null;
-   const sel=body.querySelector(`select[data-bulk-i="${input.dataset.bulkI}"][data-bulk-k="label"]`);if(sel)sel.value='direct';
-   syncInitialFromTable();
- }));
+ body.querySelectorAll('input[data-bulk-k="pos"]').forEach(input=>{
+   const commit=()=>{
+     const d=devices[+input.dataset.bulkI];if(!d)return;
+     const v=input.valueAsNumber;
+     if(input.value.trim()==='' || !Number.isFinite(v)){
+       input.value=Math.round(initialPosition(d));
+       return;
+     }
+     const value=Math.max(+d.machineMin,Math.min(+d.machineMax,v));
+     input.value=value;
+     if(value===initialPosition(d))return;
+     pushUndoSnapshot();
+     d.initialPosition=value;
+     d.initialLabelName=null;
+     const sel=body.querySelector(`select[data-bulk-i="${input.dataset.bulkI}"][data-bulk-k="label"]`);
+     if(sel)sel.value='direct';
+     scheduleSave();renderMonitorCueBrowser();renderStage(+seek.value||0);
+   };
+   input.addEventListener('blur',commit);
+   input.addEventListener('keydown',e=>{
+     if(e.key==='Enter'){e.preventDefault();input.blur();}
+     if(e.key==='Escape'){input.value=Math.round(initialPosition(devices[+input.dataset.bulkI]));input.blur();}
+   });
+ });
 }
 function renderDeviceList(){
  const standardList=document.getElementById('deviceList'),otherList=document.getElementById('otherPermanentList');
@@ -2678,8 +2699,47 @@ function renderSettings(){
  else specialNotice.innerHTML='';
  labelBody.innerHTML='';
  for(let i=0;i<10;i++){const l=d.labels[i]||{name:'',pos:''};const tr=document.createElement('tr');tr.innerHTML=`<td>${i+1}</td><td><input data-k="name" value="${escapeHtml(l.name)}"></td><td><input data-k="pos" type="number" value="${escapeHtml(l.pos)}"></td>`;labelBody.appendChild(tr)}
+ const swapTarget=document.getElementById('swapHangingTarget');
+ const previousTarget=swapTarget.value;
+ swapTarget.innerHTML='<option value="">装置を選択</option>'+selectableDevices().filter(x=>x.id!==d.id).map(x=>`<option value="${escapeHtml(x.id)}">${escapeHtml(x.id)} ${escapeHtml(x.itemName||'（名称なし）')}</option>`).join('');
+ if([...swapTarget.options].some(o=>o.value===previousTarget))swapTarget.value=previousTarget;
+ document.getElementById('swapHangingBtn').disabled=!isDeviceEnabled(d);
  refreshHangingClipboardUI();
 }
+document.getElementById('swapHangingBtn').onclick=()=>{
+ const a=dev(selectedDevice),b=dev(document.getElementById('swapHangingTarget').value);
+ if(!a||!b||a===b||!isDeviceEnabled(a)||!isDeviceEnabled(b))return;
+ const moveMotion=document.getElementById('swapHangingMotion').checked;
+ const fits=(source,target)=>{
+   const positions=(source.labels||[]).map(l=>+l.pos);
+   if(moveMotion){
+     positions.push(initialPosition(source));
+     cues.forEach(q=>(q.runs||[]).filter(r=>r.device===source.id).forEach(r=>{
+       positions.push(+r.target);
+       if(r.use2 && r.pos2!=='' && r.pos2!=null)positions.push(+r.pos2);
+     }));
+   }
+   return positions.every(p=>Number.isFinite(p)&&p>=+target.machineMin&&p<=+target.machineMax);
+ };
+ if(!fits(a,b)||!fits(b,a)){
+   alert('入れ替え先の可動範囲を超える位置があります。ラベル・初期位置・Cueを確認してください。');return;
+ }
+ if(!confirm(`${a.id} と ${b.id} の吊り物設定を入れ替えます。\n${moveMotion?'初期位置・Cueも一緒に移します。':'初期位置・Cueは各装置に残します。'}\n装置固有の可動範囲・速度設定は変更しません。`))return;
+ pushUndoSnapshot();
+ const pa=hangingPackage(a),pb=hangingPackage(b);
+ applyHangingPackage(a,pb);applyHangingPackage(b,pa);
+ if(moveMotion){
+   [a.initialPosition,b.initialPosition]=[b.initialPosition,a.initialPosition];
+   [a.initialLabelName,b.initialLabelName]=[b.initialLabelName,a.initialLabelName];
+   cues.forEach(q=>(q.runs||[]).forEach(r=>{
+     if(r.device===a.id)r.device=b.id;
+     else if(r.device===b.id)r.device=a.id;
+   }));
+ }else{
+   a.initialLabelName=null;b.initialLabelName=null;
+ }
+ refreshAfterHangingEdit();
+};
 function syncSettingsFromUI(){
  const d=dev(selectedDevice);if(!d)return;
  d.itemName=s_item.value;
