@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.6</title>
+<title>舞台機構シミュレーター v2.7</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -421,6 +421,8 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 .io-section{margin-top:16px;padding-top:12px;border-top:1px solid #465155}
 .io-section h4{margin:0 0 8px;font-size:13px;line-height:1.5;color:#dce5e8}
 .io-grid.io-single{grid-template-columns:minmax(0,1fr)}
+.io-grid.io-save-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.io-save-grid #exportShareBtn{grid-column:1 / -1}
 .io-reset{margin-top:26px;padding-top:18px;border-top:1px solid #6b777c}
 .io-reset button{width:100%;min-height:44px;padding:8px;background:#7d292e;color:#fff;border:1px solid #b85259;border-radius:5px;font:inherit;cursor:pointer}
 .io-reset button:hover{background:#96343b}
@@ -444,7 +446,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.6</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.7</div>
   </div>
 </div>
 
@@ -458,7 +460,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
   </div>
   <section class="io-section" aria-label="保存・共有">
     <h4>保存・共有</h4>
-    <div class="io-grid">
+    <div class="io-grid io-save-grid">
       <button id="exportShareBtn" class="io-padded">保存用共有コード</button>
       <button id="importJsonBtn">JSON読込</button>
       <button id="exportJsonBtn">JSON保存</button>
@@ -480,9 +482,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
   <div id="shareBox" class="share-box">
     <div class="io-head"><strong id="shareTitle">保存用共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
     <div class="share-meta">プロジェクト名: <span id="shareProjectName"></span> ／ 最終更新日時: <span id="shareUpdatedAt"></span></div>
-    <label class="share-meta" for="shareCode">保存するときは「現在のデータから作成」、読み込むときは保存した共有用テキストを下の欄に貼り付けてください。</label>
+    <label class="share-meta" for="shareCode">保存するときは「コード作成」、読み込むときは保存した共有用テキストを下の欄に貼り付けてください。</label>
     <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="保存用共有テキスト" placeholder="プロジェクト名・最終更新日時・SCUE1:... を含む共有用テキストをここへ貼り付け"></textarea>
-    <div class="share-actions"><button id="generateShareCode">現在のデータから作成</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このテキストを読込</button><button id="clearShareCode">クリア</button></div>
+    <div class="share-actions"><button id="generateShareCode">コード作成</button><button id="copyShareText">コピー</button><button id="restoreShareCode">読込</button><button id="clearShareCode">クリア</button></div>
     <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
   </div>
   <div class="io-reset">
@@ -1442,7 +1444,7 @@ async function showExportShareCode(){
   if(generation!==shareCodeGeneration||shareCodeEl.value!==previousCode)return;
   shareCodeEl.value=formatShareText(payload,r.code);
   shareMetaEl.textContent=`${shareCodeEl.value.length.toLocaleString()}文字`;
-  shareMessageEl.textContent='「共有用テキストをコピー」で保存できます。保存したテキストをそのまま貼り付けると読み込めます。';
+  shareMessageEl.textContent='「コピー」で共有用テキストを保存できます。保存したテキストをそのまま貼り付けると読み込めます。';
   shareMessageEl.className='share-message ok';
  }catch(e){
   if(generation!==shareCodeGeneration||shareCodeEl.value!==previousCode)return;
@@ -2986,7 +2988,7 @@ closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('a
 ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
 document.getElementById('exportShareBtn').addEventListener('click',openShareBox);
 document.getElementById('generateShareCode').addEventListener('click',showExportShareCode);
-shareCodeEl.addEventListener('input',()=>{shareCodeGeneration++;shareMetaEl.textContent='';shareMessageEl.textContent='読み込む場合は「このテキストを読込」を押してください。';shareMessageEl.className='share-message'});
+shareCodeEl.addEventListener('input',()=>{shareCodeGeneration++;shareMetaEl.textContent='';shareMessageEl.textContent='読み込む場合は「読込」を押してください。';shareMessageEl.className='share-message'});
 document.getElementById('copyShareText').addEventListener('click',copyShareTextForSharing);
 document.getElementById('restoreShareCode').addEventListener('click',restoreShareCodeFromText);
 document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeGeneration++;shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
