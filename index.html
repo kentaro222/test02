@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.7</title>
+<title>舞台機構シミュレーター v2.8</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -446,7 +446,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.7</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.8</div>
   </div>
 </div>
 
@@ -470,7 +470,9 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     <h4>実機データの読込</h4>
     <div class="io-grid io-single">
       <button id="csvInitBtn" class="primary">装置CSV読込</button>
+      <button id="csvLabelsBtn">ラベル・位置のみ読込</button>
     </div>
+    <div class="small-muted">ラベル・位置のみ読込：機構IDが一致する装置のラベルを置き換えます。ほかの設定は変更しません。</div>
   </section>
   <section class="io-section" aria-label="記録表への書出">
     <h4>記録表への書出</h4>
@@ -492,6 +494,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
   </div>
   <button id="closeIoBtn" class="io-close">閉じる</button>
   <input id="csvInitFile" type="file" accept=".csv,text/csv" hidden>
+  <input id="csvLabelsFile" type="file" accept=".csv,text/csv" hidden>
   <input id="importJsonFile" type="file" accept=".json,application/json" hidden>
 </div></div>
 
@@ -1078,16 +1081,20 @@ function normalizeCsvNumber(v){
  const n=Number(s);
  return Number.isFinite(n)?n:null;
 }
-function deviceFromCsvRow(cols,oldDevice){
- const id=(cols[0]||'').trim();
- const itemName=(cols[1]||'').trim();
- const height=normalizeCsvNumber(cols[3]) ?? 0;
+function labelsFromCsvRow(cols){
  const labels=[];
  for(let i=0;i<10;i++){
    const name=(cols[8+i*2]||'').trim();
    const pos=normalizeCsvNumber(cols[9+i*2]);
    if(name!=='' && pos!==null)labels.push({name,pos});
  }
+ return labels;
+}
+function deviceFromCsvRow(cols,oldDevice){
+ const id=(cols[0]||'').trim();
+ const itemName=(cols[1]||'').trim();
+ const height=normalizeCsvNumber(cols[3]) ?? 0;
+ const labels=labelsFromCsvRow(cols);
  const dtype=BASE_DEVICES.find(d=>d.id===id)?.type||'baton';
  const d=oldDevice?deep(oldDevice):{
    id,sourceId:id,itemName:'',toolHeight:0,userMin:300,userMax:20300,
@@ -1150,6 +1157,32 @@ function importInitialSetupCsv(textCsv){
  const notice=document.getElementById('csvStateNotice');
  if(notice)notice.textContent=`CSV読込済み：${imported.size}機構 / 吊物名 ${itemCount}件 / ラベル ${labelCount}件`;
  alert(`CSVから初期設定を作成しました。\n対象機構: ${imported.size}件\n吊物名あり: ${itemCount}件\nラベル: ${labelCount}件\n\n速度・加速・減速の列は読み込んでいません。`);
+}
+
+function importDeviceLabelsCsv(textCsv){
+ const imported=new Map();
+ for(const line of textCsv.replace(/\r\n?/g,'\n').split('\n')){
+  if(!line.trim())continue;
+  const cols=parseCsvLine(line);
+  const id=(cols[0]||'').trim();
+  if(!dev(id))continue;
+  if(cols.length<28)throw new Error(`${id}: ラベル列が不足しています。装置CSVを選択してください。`);
+  for(let i=0;i<10;i++){
+   const name=(cols[8+i*2]||'').trim(),position=(cols[9+i*2]||'').trim();
+   if((name!==''||position!=='')&&(!name||normalizeCsvNumber(position)===null)){
+    throw new Error(`${id}: ラベル${i+1}の名前または位置が不正です。`);
+   }
+  }
+  imported.set(id,labelsFromCsvRow(cols));
+ }
+ if(!imported.size)throw new Error('機構IDが一致する装置が見つかりませんでした。');
+ pushUndoSnapshot();
+ for(const [id,labels] of imported)dev(id).labels=labels;
+ save();
+ renderSettings();renderInitialBulk();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);
+ const labelCount=[...imported.values()].reduce((n,labels)=>n+labels.length,0);
+ document.getElementById('csvStateNotice').textContent=`ラベル・位置読込済み：${imported.size}機構 / ラベル ${labelCount}件`;
+ alert(`ラベルと位置のみ読み込みました。\n対象機構: ${imported.size}件\nラベル: ${labelCount}件\nほかの設定は変更していません。`);
 }
 
 function csvCell(v){
@@ -2944,6 +2977,20 @@ csvInitFile.onchange=async e=>{
  }catch(err){
    console.error(err);
    alert('CSVの読み込みに失敗しました。');
+ }
+ e.target.value='';
+};
+
+const csvLabelsFileEl=document.getElementById('csvLabelsFile');
+document.getElementById('csvLabelsBtn').onclick=()=>csvLabelsFileEl.click();
+csvLabelsFileEl.onchange=async e=>{
+ const file=e.target.files?.[0];
+ if(!file)return;
+ try{
+  importDeviceLabelsCsv(decodeCsvBuffer(await file.arrayBuffer()));
+ }catch(err){
+  console.error(err);
+  alert('ラベル・位置の読み込みに失敗しました。\n'+err.message);
  }
  e.target.value='';
 };
