@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.4</title>
+<title>舞台機構シミュレーター v2.5</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -444,7 +444,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.4</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.5</div>
   </div>
 </div>
 
@@ -571,7 +571,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 <option value="#b51f2e">赤</option><option value="#d97b16">オレンジ</option><option value="#d6bf28">黄</option>
 <option value="#3d8b4f">緑</option><option value="#2e70b8">青</option><option value="#7652a3">紫</option>
 </select></div>
-        <div class="field"><label>透過率</label><input id="s_opacity" type="range" min="10" max="100" step="5" value="100"><div class="small-muted"><span id="s_opacityValue">100</span>%</div></div>
+        <div class="field"><label>不透過率</label><input id="s_opacity" type="range" min="10" max="100" step="5" value="100"><div class="small-muted"><span id="s_opacityValue">100</span>%</div></div>
       </div>
       <h3>目標地ラベル</h3>
       <table class="label-table"><thead><tr><th style="width:60px">No.</th><th>名称</th><th style="width:220px">位置 mm</th></tr></thead><tbody id="labelBody"></tbody></table>
@@ -1515,7 +1515,7 @@ function validateProjectPayload(obj){
      return {ok:false,msg:`${id}: 機械限界が不正です。`};
    }
    if(d.displayColor!=null && typeof d.displayColor!=='string')return {ok:false,msg:`${id}: 表示色が不正です。`};
-   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 透過率が不正です。`};
+   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 不透過率が不正です。`};
    if(!Array.isArray(d.labels))return {ok:false,msg:`${id}: labels が配列ではありません。`};
    for(let li=0;li<d.labels.length;li++){
      const l=d.labels[li];
