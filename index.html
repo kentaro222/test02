@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.5</title>
+<title>舞台機構シミュレーター v2.6</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -444,7 +444,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.5</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.6</div>
   </div>
 </div>
 
@@ -571,7 +571,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
 <option value="#b51f2e">赤</option><option value="#d97b16">オレンジ</option><option value="#d6bf28">黄</option>
 <option value="#3d8b4f">緑</option><option value="#2e70b8">青</option><option value="#7652a3">紫</option>
 </select></div>
-        <div class="field"><label>不透過率</label><input id="s_opacity" type="range" min="10" max="100" step="5" value="100"><div class="small-muted"><span id="s_opacityValue">100</span>%</div></div>
+        <div class="field"><label for="s_opacity">透過率</label><input id="s_opacity" type="range" min="0" max="100" step="5" value="0"><div class="small-muted"><span id="s_opacityValue">0</span>%（0%＝不透明、100%＝透明）</div></div>
       </div>
       <h3>目標地ラベル</h3>
       <table class="label-table"><thead><tr><th style="width:60px">No.</th><th>名称</th><th style="width:220px">位置 mm</th></tr></thead><tbody id="labelBody"></tbody></table>
@@ -1102,7 +1102,7 @@ function deviceFromCsvRow(cols,oldDevice){
      (/スクリーン|LED/.test(n)?'#d9d9d9':'#7b8790'));
  }
  if(d.displayOpacity==null){
-   d.displayOpacity=/袖幕/.test(itemName)?0.45:(/幕|文字幕/.test(itemName)?0.72:1);
+   d.displayOpacity=1;
  }
  d.labels=labels;
  if(!oldDevice || !Number.isFinite(+oldDevice.initialPosition))d.initialPosition=+d.machineMax;
@@ -1515,7 +1515,7 @@ function validateProjectPayload(obj){
      return {ok:false,msg:`${id}: 機械限界が不正です。`};
    }
    if(d.displayColor!=null && typeof d.displayColor!=='string')return {ok:false,msg:`${id}: 表示色が不正です。`};
-   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 不透過率が不正です。`};
+   if(d.displayOpacity!=null && (!Number.isFinite(+d.displayOpacity) || +d.displayOpacity<0 || +d.displayOpacity>1))return {ok:false,msg:`${id}: 透過率が不正です。`};
    if(!Array.isArray(d.labels))return {ok:false,msg:`${id}: labels が配列ではありません。`};
    for(let li=0;li<d.labels.length;li++){
      const l=d.labels[li];
@@ -2720,7 +2720,7 @@ function renderSettings(){
  setTitle.textContent=d.id+'　'+(d.itemName||'');
  s_id.value=d.id;s_item.value=d.itemName||'';s_height.value=d.toolHeight||0;s_hang.value=d.hangOffset||0;
  const palette=['#333333','#6f767a','#d9d9d9','#b51f2e','#d97b16','#d6bf28','#3d8b4f','#2e70b8','#7652a3'];
- s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((d.displayOpacity==null?1:d.displayOpacity)*100);s_opacityValue.textContent=s_opacity.value;
+ s_color.value=palette.includes(d.displayColor)?d.displayColor:'#6f767a';s_opacity.value=Math.round((1-(d.displayOpacity==null?1:d.displayOpacity))*100);s_opacityValue.textContent=s_opacity.value;
  if(d.type==='constant')specialNotice.innerHTML=`<div class="notice">${escapeHtml(d.id)}：${fixedDeviceSpeed(d)} mm/s 固定、加速0.1秒・減速0.1秒固定として扱います。可動範囲 ${d.machineMin}〜${d.machineMax} mm。</div>`;
  else if(d.type==='curtain')specialNotice.innerHTML='<div class="notice">割UD緞帳：位置は緞帳下端基準。0 mm＝降り切り、上限10100 mm、幕高10000 mm。</div>';
  else specialNotice.innerHTML='';
@@ -2773,7 +2773,7 @@ function syncSettingsFromUI(){
  d.toolHeight=Math.max(0,+s_height.value||0);
  d.hangOffset=Math.max(0,+s_hang.value||0);
  s_height.value=d.toolHeight;s_hang.value=d.hangOffset;
- d.displayColor=s_color.value;d.displayOpacity=(+s_opacity.value||100)/100;
+ d.displayColor=s_color.value;d.displayOpacity=(100-(+s_opacity.value||0))/100;
  const arr=[];document.querySelectorAll('#labelBody tr').forEach(tr=>{const n=tr.querySelector('[data-k="name"]').value.trim(),p=tr.querySelector('[data-k="pos"]').value;if(n&&p!=='')arr.push({name:n,pos:+p})});d.labels=arr;
  scheduleSave();renderDeviceList();renderInitialBulk();renderMonitorCueBrowser();renderStage(+seek.value||0);
 }
