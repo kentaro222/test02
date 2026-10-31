@@ -459,8 +459,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
   <section class="io-section" aria-label="保存・共有">
     <h4>保存・共有</h4>
     <div class="io-grid">
-      <button id="importShareBtn">共有コード読込</button>
-      <button id="exportShareBtn" class="io-padded">共有コード書出</button>
+      <button id="exportShareBtn" class="io-padded">保存用共有コード</button>
       <button id="importJsonBtn">JSON読込</button>
       <button id="exportJsonBtn">JSON保存</button>
     </div>
@@ -479,10 +478,11 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
     </div>
   </section>
   <div id="shareBox" class="share-box">
-    <div class="io-head"><strong id="shareTitle">共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
+    <div class="io-head"><strong id="shareTitle">保存用共有コード</strong><div class="grow"></div><span id="shareMeta" class="share-meta"></span></div>
     <div class="share-meta">プロジェクト名: <span id="shareProjectName"></span> ／ 最終更新日時: <span id="shareUpdatedAt"></span></div>
+    <label class="share-meta" for="shareCode">保存するときは「現在のデータから作成」、読み込むときは保存したコードを下の欄に貼り付けてください。</label>
     <textarea id="shareCode" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="SCUE1:... の共有コードをここへ貼り付け"></textarea>
-    <div class="share-actions"><button id="copyShareCode" class="io-padded">コードをコピー</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
+    <div class="share-actions"><button id="generateShareCode">現在のデータから作成</button><button id="copyShareCode" class="io-padded">コードをコピー</button><button id="copyShareText">共有用テキストをコピー</button><button id="restoreShareCode">このコードを読込</button><button id="clearShareCode">クリア</button></div>
     <div id="shareMessage" class="share-message">Google Keep・LINE・メール等へそのまま貼り付けできます。共有コードは暗号化ではありません。</div>
   </div>
   <div class="io-reset">
@@ -987,7 +987,7 @@ function redoEdit(){
 function resetProjectData(){
  const ok=confirm(
    '装置設定・初期位置・Cue・メモをすべて初期化します。\n\n' +
-   'この操作は元に戻せません。必要なら先にJSON保存または共有コード書出をしてください。\n\n' +
+   'この操作は元に戻せません。必要なら先にJSON保存または保存用共有コードの作成をしてください。\n\n' +
    '全データをリセットしますか？'
  );
  if(!ok)return;
@@ -1421,8 +1421,34 @@ const shareMetaEl=document.getElementById('shareMeta');
 const shareCodeEl=document.getElementById('shareCode');
 const shareMessageEl=document.getElementById('shareMessage');
 
-function openShareBox(mode){refreshProjectInfo();shareBoxEl.classList.add('open');shareMessageEl.className='share-message';if(mode==='import'){shareTitleEl.textContent='共有コードを読込';shareMetaEl.textContent='';shareCodeEl.value='';shareMessageEl.textContent='共有コードまたは共有用テキストを貼り付け、「このコードを読込」を押してください。';setTimeout(()=>shareCodeEl.focus(),0)}}
-async function showExportShareCode(){openShareBox('export');shareTitleEl.textContent='共有コードを書出';shareMetaEl.textContent='作成中…';shareCodeEl.value='';shareMessageEl.textContent='プロジェクト全体の共有コードを作成しています。';try{const r=await makeShareCode();shareCodeEl.value=r.code;const rate=r.rawBytes?Math.max(0,Math.round((1-r.codeBytes/r.rawBytes)*100)):0;shareMetaEl.textContent=r.compressed?`圧縮 ${rate}% / ${r.code.length.toLocaleString()}文字`:`${r.code.length.toLocaleString()}文字`;shareMessageEl.textContent='コードをコピーしてKeep・LINE・メール等へ保存できます。';shareMessageEl.className='share-message ok'}catch(e){shareMetaEl.textContent='';shareMessageEl.textContent='共有コードの作成に失敗しました: '+e.message;shareMessageEl.className='share-message error'}}
+function openShareBox(){
+ refreshProjectInfo();
+ shareBoxEl.classList.add('open');
+ shareTitleEl.textContent='保存用共有コード';
+ shareCodeEl.focus();
+}
+let shareCodeGeneration=0;
+async function showExportShareCode(){
+ openShareBox();
+ const generation=++shareCodeGeneration;
+ const previousCode=shareCodeEl.value;
+ shareMetaEl.textContent='作成中…';
+ shareMessageEl.textContent='プロジェクト全体の共有コードを作成しています。';
+ shareMessageEl.className='share-message';
+ try{
+  const r=await makeShareCode();
+  if(generation!==shareCodeGeneration||shareCodeEl.value!==previousCode)return;
+  shareCodeEl.value=r.code;
+  shareMetaEl.textContent=`${r.code.length.toLocaleString()}文字`;
+  shareMessageEl.textContent='コードをコピーして保存できます。保存したコードをこの欄に貼り付けると読み込めます。';
+  shareMessageEl.className='share-message ok';
+ }catch(e){
+  if(generation!==shareCodeGeneration||shareCodeEl.value!==previousCode)return;
+  shareMetaEl.textContent='';
+  shareMessageEl.textContent='共有コードの作成に失敗しました: '+e.message;
+  shareMessageEl.className='share-message error';
+ }
+}
 async function copyTextToClipboard(value){
  try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);return true}}catch(e){}
  const temp=document.createElement('textarea');temp.value=value;temp.style.position='fixed';temp.style.opacity='0';document.body.appendChild(temp);
@@ -2957,12 +2983,13 @@ document.getElementById('projectNameInput').addEventListener('input',e=>{
 openIoBtn.onclick=()=>{refreshProjectInfo();ioModal.classList.add('open');ioModal.setAttribute('aria-hidden','false')};
 closeIoBtn.onclick=()=>{ioModal.classList.remove('open');ioModal.setAttribute('aria-hidden','true')};
 ioModal.addEventListener('click',e=>{if(e.target===ioModal)closeIoBtn.click()});
-document.getElementById('exportShareBtn').addEventListener('click',showExportShareCode);
-document.getElementById('importShareBtn').addEventListener('click',()=>openShareBox('import'));
+document.getElementById('exportShareBtn').addEventListener('click',openShareBox);
+document.getElementById('generateShareCode').addEventListener('click',showExportShareCode);
+shareCodeEl.addEventListener('input',()=>{shareCodeGeneration++;shareMetaEl.textContent='';shareMessageEl.textContent='読み込む場合は「このコードを読込」を押してください。';shareMessageEl.className='share-message'});
 document.getElementById('copyShareCode').addEventListener('click',copyShareCodeText);
 document.getElementById('copyShareText').addEventListener('click',copyShareTextForSharing);
 document.getElementById('restoreShareCode').addEventListener('click',restoreShareCodeFromText);
-document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
+document.getElementById('clearShareCode').addEventListener('click',()=>{shareCodeGeneration++;shareCodeEl.value='';shareMetaEl.textContent='';shareMessageEl.textContent='共有コード欄をクリアしました。';shareMessageEl.className='share-message'});
 
 resetProjectBtn.onclick=resetProjectData;
 exportDeviceCsvBtn.onclick=exportDeviceSetupCsv;
