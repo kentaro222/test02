@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>舞台機構シミュレーター v2.8</title>
+<title>舞台機構シミュレーター v2.9</title>
 <style>
 :root{
   --bg:#1e2325;--panel:#303639;--panel2:#3e4548;--line:#586164;--text:#e8eef0;
@@ -446,7 +446,7 @@ html.tablet-landscape .tab{height:calc(100vh - 92px);height:calc(100dvh - 92px)}
       <button id="openIoBtn" class="file-btn primary-io">入出力</button>
       <button id="wakeLockBtn" class="file-btn wake-lock-btn" type="button" aria-pressed="false" title="画面の自動消灯を防止">消灯防止 OFF</button>
     </div>
-    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.8</div>
+    <div id="saveState" class="save-state">保存済み</div><div class="app-title">舞台機構シミュレーター v2.9</div>
   </div>
 </div>
 
@@ -1696,6 +1696,25 @@ function transitionDisplayTime(v1,v2){return Math.floor((Math.abs(v1-v2)/1000)*1
 function minRampTime(speed){return Math.ceil((speed/MAX_ACCEL)*10-1e-9)/10}
 function between(p,a,b){return p>=Math.min(a,b)&&p<=Math.max(a,b)}
 
+// Truncate computed speeds only. Decimal digits avoid floating-point errors at
+// powers of ten; manual speeds and the motion/timing model retain their precision.
+function truncateSpeedToThreeSignificantDigits(value){
+ if(!Number.isFinite(value)||value<=0)return NaN;
+ const [mantissa,exponent]=value.toExponential().split('e');
+ const digits=mantissa.replace('.','').slice(0,3).padEnd(3,'0');
+ return Number(`${digits}e${Number(exponent)-2}`);
+}
+function computedSpeedResult(r,start,requested,theoreticalSpeed){
+ // The speed input uses whole mm/s; never round a sub-unit result up.
+ const speed=Math.floor(truncateSpeedToThreeSignificantDigits(theoreticalSpeed));
+ if(!Number.isFinite(speed)||speed<1||speed>MAX_SPEED)return {ok:false,msg:'算出速度が実機範囲（1〜1500 mm/s）外です'};
+ const v=validateRun({...r,speed},start);
+ if(!v.ok)return v;
+ const shown=Math.round(v.total*10)/10;
+ const displayDiff=Math.abs(shown-Math.round(requested*10)/10);
+ return {ok:true,speed,total:v.total,shown,displayDiff,rawDiff:Math.abs(v.total-requested),exact:displayDiff<0.049};
+}
+
 // Entering a desired operation time in the Cue editor recalculates the primary speed.
 // Operation time excludes delay; delay is displayed and handled independently.
 function solvePrimarySpeedFromTime(r,start,requestedTime){
@@ -1704,6 +1723,16 @@ function solvePrimarySpeedFromTime(r,start,requestedTime){
  if(d.type==='constant')return {ok:false,msg:`${d.id} は ${fixedDeviceSpeed(d)} mm/s 固定のため、時間から速度を逆算できません`};
  const requested=Number(requestedTime);
  if(!Number.isFinite(requested)||requested<=0)return {ok:false,msg:'運転タイムは0より大きい値を入力してください'};
+
+ if(!r.use2){
+   const candidate={...r};
+   syncRunTargetFromLabel(candidate);
+   const acc=+r.acc,dec=+r.dec;
+   const cruiseEquivalent=requested-(acc+dec)/2;
+   if(![start,+candidate.target,acc,dec,cruiseEquivalent].every(Number.isFinite)||acc<0||dec<0||cruiseEquivalent<=0)
+     return {ok:false,msg:'指定時間・位置・加減速時間を確認してください'};
+   return computedSpeedResult(candidate,start,requested,Math.abs(+candidate.target-start)/cruiseEquivalent);
+ }
 
  const requestedShown=Math.round(requested*10)/10;
  let best=null;
@@ -1717,14 +1746,14 @@ function solvePrimarySpeedFromTime(r,start,requestedTime){
    const rawDiff=Math.abs(total-requested);
    // The console can have multiple integer speeds that produce the same displayed
    // operation time because time is handled at 0.1 s resolution. In that case,
-   // prefer the fastest valid speed (実機の速度逆算仕様に合わせる).
+   // preserve the existing two-position search, then truncate its computed result.
    if(!best || displayDiff<best.displayDiff-1e-9 ||
       (Math.abs(displayDiff-best.displayDiff)<1e-9 && speed>best.speed)){
      best={speed,total,shown,displayDiff,rawDiff};
    }
  }
  if(!best)return {ok:false,msg:'現在の位置・加速・減速・2位置設定では成立する速度がありません'};
- return {...best,ok:true,exact:best.displayDiff<0.049};
+ return computedSpeedResult(r,start,requested,best.speed);
 }
 
 function validateRun(r,start){
@@ -2599,7 +2628,7 @@ function renderCueEditor(){
      pushUndoSnapshot();
      r.speed=solved.speed;
      save();renderCueEditor();renderMonitorCueBrowser();renderStage(+seek.value||0);updateMonitorValidation();
-     if(!solved.exact)alert(`指定した ${(+el.value).toFixed(1)} 秒は実機速度では一致しません。\n最も近い ${solved.shown.toFixed(1)} 秒（${solved.speed} mm/s）に設定しました。`);
+     if(!solved.exact)alert(`指定した ${(+el.value).toFixed(1)} 秒は算出速度では一致しません。\n切り捨て後の ${solved.shown.toFixed(1)} 秒（${solved.speed} mm/s）に設定しました。`);
      return;
    }
    pushUndoSnapshot();
